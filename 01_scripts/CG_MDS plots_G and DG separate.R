@@ -1,31 +1,41 @@
-#
-#
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-BiocManager::install(version = "3.3")
-#
-
-
-## try http:// if https:// URLs are not supported
-source("http://bioconductor.org/biocLite.R")
-biocLite("edgeR")
-
-#
+# Data exploration script
+# Initialized to GitHub 2022-03-15
 
 # clear workspace
-rm(list=ls())
+#rm(list=ls())
 
-citation("edgeR")
+# Install packages and load libraries
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# BiocManager::install(version = "3.14")
+# BiocManager::install("edgeR")
+# BiocManager::install("limma")
+
 library("limma")
 library("edgeR")
 
-# ******All libraries First**********************
+## Set working directory
+current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
+current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path) # take main directory
+setwd(current.path)
 
-cgrawdata <- read.csv("cgrnaseqBTv1.csv", header = TRUE)
-#Create A DGEList object for easy manipulation
-y <- DGEList(counts = cgrawdata[ ,2:33], genes = cgrawdata[ ,1])
-#
-#
+# Set input filenames
+input.FN <- "02_input_data/cgrnaseqBTv1.csv" # this is the input filename for "CG_MDS plots_G and DG separate.R"
+
+#### Read in all libraries data ####
+cgrawdata <- read.csv(file = input.FN, header = TRUE)
+head(cgrawdata)
+
+# All columns
+colnames(cgrawdata)
+
+# Selected for DGEList
+colnames(cgrawdata)[2:33]
+
+
+# Create a DGEList object
+y <- DGEList(counts = cgrawdata[, 2:33], genes = cgrawdata[ ,1])
+
 # Both
 colnames(cgrawdata)[1] <- "jong.id"
 #
