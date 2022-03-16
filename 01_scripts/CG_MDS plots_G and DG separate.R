@@ -21,6 +21,7 @@ setwd(current.path)
 
 # Set input filenames
 input.FN <- "02_input_data/cgrnaseqBTv1.csv" # this is the input filename for "CG_MDS plots_G and DG separate.R"
+annot.FN <- "02_input_data/project155.uniprot_blastp.txt.gz"
 
 #### Read in all libraries data ####
 cgrawdata <- read.csv(file = input.FN, header = TRUE)
@@ -32,73 +33,81 @@ colnames(cgrawdata)
 # Selected for DGEList
 colnames(cgrawdata)[2:33]
 
+# Rename unigene to 'jong.id'
+colnames(cgrawdata)[1] <- "jong.id"
+
+# Sort by unigene
+# cgrawdata.sorted <- cgrawdata[order(cgrawdata$jong.id),]
+# str(cgrawdata.sorted)
+## to confirm: I think this is unecessary? 
+
+#### Read in annotation information ####
+uniprot.map <- read.table(file = gzfile(annot.FN)
+                          , sep = "\t"
+                          , header = F
+                          )
+
+head(uniprot.map)
+colnames(uniprot.map) <- c("jong.id" , "uniprot")
+uniprot.map$jong.id <- as.character(uniprot.map$jong.id)
+
+head(uniprot.map)
+str(uniprot.map)
+dim(uniprot.map)
+
+
+#### Combine counts and annotation
+data <- merge(x = cgrawdata, y = uniprot.map, by = "jong.id")
+dim(cgrawdata)     # 52000
+dim(uniprot.map)   # 42708
+dim(data) # limited by uniprot.map
+
+colnames(data)
+
+#### Question: why are there fewer entries in the uniprot.map than the counts? ####
+
+#### Prepare DGEList ####
+y <- DGEList(counts = data[, which(!(colnames(data) %in% c("Evalue", "bp", "ID", "uniprot", "jong.id")))] # select only count cols
+             , genes = data[, c("jong.id", "Evalue", "bp", "ID", "uniprot")] # select only annotation cols
+             ) 
+
+str(y)
+head(y$genes)
 
 # Create a DGEList object
-y <- DGEList(counts = cgrawdata[, 2:33], genes = cgrawdata[ ,1])
-
-# Both
-colnames(cgrawdata)[1] <- "jong.id"
-#
-# sort by jong.id
-cgrawdata.sorted <- cgrawdata[order(cgrawdata$jong.id),]
-str(cgrawdata.sorted)
-#
-# Merge the identifiers from the complete list right in the beginning
-
-uniprot.map <- read.table(file="project155.uniprot_blastp.txt"
-                          , header = F)
-colnames(uniprot.map) <- c("jong.id" , "uniprot")
-str(uniprot.map)
-
-# sort by jong.id
-uniprot.map.sorted <- uniprot.map[order(uniprot.map$jong.id),]
+### OTHER METHOD APPLIED: 
+# y <- DGEList(counts = cgrawdata[, 2:33], genes = cgrawdata[ ,1])
 
 
-data <- merge(x = cgrawdata.sorted, y = uniprot.map.sorted, by = "jong.id")
+###### Tissue-separated #####
+# Based on numeric selection, it appears that the gill tissues are the following samples: 
+colnames(y)[1:14]  # Gill
+colnames(y)[15:28] # Digestive gland
 
-str(data)
-
-# Move ID column to last position
-data <- data[,c(1:35,37,36)]
-
-str(data)
-
-
-# Create A DGEList object for easy manipulation
-y <- DGEList(counts = data[ ,2:33], genes = data[c(1,34,35,36,37)])
-str(y)
-y$genes
-
-
-
-
-###### Subset samples for tissue #####
-# 
-
-y.gill <- y[,1:14]
+# Gill samples are those without '.1' at the end; these have a total of 4 characters in the string
+y.gill <- y[, which(nchar(colnames(y))==4)]
 colnames(y.gill)
 
-y.dig <- y[,15:28]
+# Digestive gland samples are those with '.1' at the end; these have a total of 6 characters in the string
+y.dig <- y[, which(nchar(colnames(y))==6)]
 colnames(y.dig)
 
-#y.gCGRef <- y[,29:30]
-#colnames(y.gCGRef)
+# y.gillCG <- y[,29]
+# colnames(y.gillCG)
+# 
+# y.gillRef <- y[,30]
+# colnames(y.gillRef)
+# 
+# y.dig.CG <- y[,31]
+# colnames(y.dig.CG)
+# 
+# y.dig.Ref <- y[,32]
+# colnames(y.dig.Ref)
+# 
+# y.all <- y[,1:28]
+# colnames(y.all)
 
-y.gillCG <- y[,29]
-colnames(y.gillCG)
-
-y.gillRef <- y[,30]
-colnames(y.gillRef)
-
-y.dig.CG <- y[,31]
-colnames(y.dig.CG)
-
-y.dig.Ref <- y[,32]
-colnames(y.dig.Ref)
-
-y.all <- y[,1:28]
-colnames(y.all)
-
+##### Manually choose which unit to be analyzed 
 #y <- y.gill
 #y <- y.all
 y <- y.dig 
@@ -106,24 +115,16 @@ y <- y.dig
 #y <- y.gillRef
 
 
-
 #### Library Sizes ####
-
 str(y[[2]])
 y[[2]]$lib.size # lib sizes
-
-
-# Google search: subsetting lists
 
 
 ### TMM  normalization  ####
 # Normalization is  applied  to  this  dataset  to  account  for  compositional  difference
 # between the libraries
-
 y <- calcNormFactors(y, method="TMM")
 y$samples
-
-
 
 
 # Data Exploration:
