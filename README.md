@@ -12,7 +12,6 @@ Requires the following input data:
 `02_input_data/cg_sediment_data_2022-03-25.csv`      
 `02_input_data/cgsedimentPCA.csv`           
 
-Prepare a PCA of sample locations based on site metadata and survival/ growth by running interactively:        
-`01_scripts/CG_beach_PCAs.R`        
-...manually save out PDF of PCA.     
+Prepare a PCA of sample locations based on site metadata and survival/ growth, and investigate statistical correlates of survival and growth by running interactively:        
+`01_scripts/01_pheno_and_abiotic_var.R`       
 
