@@ -169,33 +169,6 @@ for(i in 1:length(datatypes)){
 
 
 
-
-
-
-###### If need to export #####
-#### 4. Prepare Output ####
-# # generate CPM matrix
-# normalized.output <- cpm(my.counts, normalized.lib.sizes = TRUE, log= F)
-# 
-# # Compare the raw counts to the normalized cpm values (not log)
-# my.counts$counts[1:5, 1:5] # not normalized, raw counts
-# normalized.output[1:5, 1:5] # normalized lib size calculated cpm values
-# 
-# # output as normalized linear
-# #write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix.csv")
-# #write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_gill.csv")
-# #write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_dig.csv")
-# 
-# # # output as normalized log2 (in progress)
-# normalized.output.log2 <- cpm(my.counts, normalized.lib.sizes = TRUE, log= T, prior.count = 1)
-# #write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2.csv")
-# #write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2_gill.csv")
-# #write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2_dig.csv")
-# 
-# # output object
-# save.image(file = "02_input_data/sfon_wgcna_01_output.RData") # save out existing data 
-# 
-
 #### END NEW ####
 
 
