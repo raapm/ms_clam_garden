@@ -21,9 +21,17 @@ setwd(current.path)
 
 options(scipen = 9999999)
 
+
 #### Method 1. cpm data ####
 # Set input filenames
 input.FN <- "02_input_data/out.matrix.csv"
+pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv" # the original input filename
+
+#### Read in phenotype data ####
+phenos.df <- read.csv(file = pheno.FN)
+phenos.df$sample.id <- paste0("P", phenos.df$plot)
+
+phenos.df
 
 #### Read in raw count data ####
 # Import counts file (i.e. the final output from Simple_reads_to_counts repo)
@@ -80,8 +88,6 @@ for(i in 1:length(datatypes)){
   
   # create DGElist
   doi.DGEList <- DGEList(counts = doi)
-  
-  # TODO: ADD PHENOTYPES HERE to the DGEList
   
   # Statistics on library sizes
   doi.summary[[paste0(datatypes[[i]], "_align_summary")]]    <- summary(doi.DGEList$samples$lib.size)
@@ -167,6 +173,74 @@ for(i in 1:length(datatypes)){
   
   }
 
+#### Exploratory MDS plots ####
+datatypes
+#doi <- doi.DGEList.filt[["all"]] # choose from
+#doi <- doi.DGEList.filt[["gill"]] # choose from
+#doi <- doi.DGEList.filt[["dig"]] # choose from
+
+# What are the samples, and in what order?
+sample_order.df <- rownames(doi$samples)
+sample_order.df <- as.data.frame(sample_order.df)
+colnames(sample_order.df)[1] <- "RNAseq.id"
+sample_order.df
+
+#sample_order.df$match.id <- sample_order.df$RNAseq.id
+
+sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
+                      , sep = "_P", into = c("drop", "plot_and_suffix")
+                       #, remove = FALSE
+                      )
+
+sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
+                            , sep = "\\.eff", into = c("plot", "suffix")
+                            #, remove = FALSE
+)
+
+sample_order.df
+sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
+
+# Put the phenotypes dataframe into the same order as the samples in the DGEList
+phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
+
+ordered_phenos.df <- phenos_for_present_samples.df[order(match(phenos_for_present_samples.df[,"sample.id"], sample_order.df[,"sample.id"])),]
+head(ordered_phenos.df)
+
+ordered_phenos.df$sample.id
+sample_order.df$sample.id
+
+#### Selecting custom labels for MDS Plot ####
+# What do we have to choose from? 
+colnames(ordered_phenos.df)
+
+# Type, Beach, sample.id
+custom_labels <- paste0(ordered_phenos.df$Type, "_"
+                        , ordered_phenos.df$beach, "_"
+                        , ordered_phenos.df$sample.id 
+       )
+
+# Survival, Beach, sample.id
+custom_labels <- paste0(ordered_phenos.df$surv, "_"
+                        , ordered_phenos.df$beach, "_"
+                        , ordered_phenos.df$sample.id 
+)
+
+# Sand, silt, sample.id
+custom_labels <- paste0(ordered_phenos.df$sand, "_"
+                        , ordered_phenos.df$silt, "_"
+                        , ordered_phenos.df$sample.id 
+)
+
+# Day, Carbon, sample.id
+custom_labels <- paste0(ordered_phenos.df$day, "_"
+                        , ordered_phenos.df$carb, "_"
+                        , ordered_phenos.df$sample.id 
+)
+
+
+# Plot
+plotMDS(x = doi, cex= 0.8, labels = custom_labels)
+# save out as 5 x 8
 
 
 #### END NEW ####
