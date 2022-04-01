@@ -116,13 +116,6 @@ for(i in 1:length(datatypes)){
 }
 
 
-
-# # Select which one you want to use, then run the rest of the 
-# my.counts.round <- my.counts.round;       datatype <- "all" # all
-# #my.counts.round <- my.counts.round.gill;  datatype <- "gill" # Gill only
-# #my.counts.round <- my.counts.round.dig;   datatype <- "dig" # Digestive gland
-
-
 #### 3. Normalization and Data Visualization ####
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
@@ -173,6 +166,7 @@ for(i in 1:length(datatypes)){
   
   }
 
+
 #### Exploratory MDS plots ####
 datatypes
 #doi <- doi.DGEList.filt[["all"]] # choose from
@@ -209,7 +203,7 @@ head(ordered_phenos.df)
 ordered_phenos.df$sample.id
 sample_order.df$sample.id
 
-#### Selecting custom labels for MDS Plot ####
+# Selecting custom labels for MDS Plot 
 # What do we have to choose from? 
 colnames(ordered_phenos.df)
 
