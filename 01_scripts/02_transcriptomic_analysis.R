@@ -237,6 +237,26 @@ plotMDS(x = doi, cex= 0.8, labels = custom_labels)
 # save out as 5 x 8
 
 
+#### 4. Tissue-specific expression ####
+datatypes
+gill.DGEList <- doi.DGEList.filt[["gill"]]
+dig.DGEList  <- doi.DGEList.filt[["dig"]] 
+
+expr_gill.vec <- rownames(gill.DGEList$counts)
+expr_dig.vec  <- rownames(dig.DGEList$counts)
+length(expr_gill.vec)
+length(expr_dig.vec)
+
+gill_specific_genes.vec <- setdiff(x = expr_gill.vec, y = expr_dig.vec)
+dig_specific_genes.vec  <- setdiff(x = expr_dig.vec, y = expr_gill.vec)
+
+length(gill_specific_genes.vec)
+length(dig_specific_genes.vec)
+
+# Data check: 
+head(gill_specific_genes.vec)
+"25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
+
 #### END NEW ####
 
 

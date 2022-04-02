@@ -36,6 +36,8 @@ Minimum individuals passing threshold: `min.ind`
 
 Go to the section `Exploratory MDS plots` to check custom labels on the mds plot. This will require choosing a datatype (all, gill, dig) from a previously-generated list.       
 
+This script will also let you find the gill- or digestive-gland-specific expressed genes by comparing those that passed filters in one tissue to the other tissue, and visa-versa.       
+
 Note: original (v.0.1) analysis remains in section: 'Method 2. Original Files'
 
 
