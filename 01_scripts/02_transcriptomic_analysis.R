@@ -19,7 +19,27 @@ current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path) # take main directory
 setwd(current.path)
 
+## Plotting options
 options(scipen = 9999999)
+
+#### Read in annotation information ####
+# contig ID and uniprot ID
+id_and_uniprot_id.df <- read.table(file = gzfile("02_input_data/project155.uniprot_blastp.txt.gz"), sep = "\t", header = F)
+colnames(id_and_uniprot_id.df) <- c("contig.id", "uniprot.id")
+head(id_and_uniprot_id.df)
+
+# contig ID and general annotation
+RPKM_and_annot.df <- read.table(file = "02_input_data/cgrnaseqBTv1.csv", header = T, sep = ",")
+dim(RPKM_and_annot.df)
+head(RPKM_and_annot.df)
+
+RPKM_and_annot.df <- RPKM_and_annot.df[, which(colnames(RPKM_and_annot.df) %in% c("unigene", "ID", "Evalue", "bp"))] # which columns have useful annotation? 
+head(RPKM_and_annot.df)
+
+# Combine contig ID and uniprot ID
+annot.df <- merge(x = id_and_uniprot_id.df, RPKM_and_annot.df, by.x = "contig.id", by.y = "unigene")
+annot.df <- annot.df[,c("contig.id", "uniprot.id", "bp", "ID", "Evalue")] # reorder cols
+head(annot.df)
 
 
 #### Method 1. cpm data ####
