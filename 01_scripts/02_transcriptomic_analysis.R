@@ -51,6 +51,7 @@ dim(annot.df)
 # Set input filenames
 input.FN <- "02_input_data/out.matrix.csv"
 pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv" # the original input filename
+#TODO: these should be further up
 
 #### Read in phenotype data ####
 phenos.df <- read.csv(file = pheno.FN)
@@ -80,16 +81,7 @@ head(my.counts)
 rownames(my.counts) <- my.counts[,"transcript.id"]
 my.counts[1:5,1:5]
 
-
-# # Round all expression levels to no decimal place, remove transcript.id column (now rownames)
-# my.counts <- my.counts[,-1]
-# 
-# # Which columns are sample data cols? 
-# sample.cols <- grep(pattern = "eff.counts", colnames(x = my.counts))
-# 
-# # Which columns are annotation data? 
-# annot.cols <- grep(pattern = "eff.counts", colnames(x = my.counts), invert = T)
-
+# Finalize dataframe formats
 my.counts.round <- my.counts # Use variable as per rest of script
 head(my.counts.round)
 str(my.counts.round) # Sample info should be numeric (NOTE: #TODO: This was due to using 'round' on the full dataset above)
@@ -97,20 +89,28 @@ my.counts.round$transcript.id <- as.character(my.counts.round$transcript.id)
 head(my.counts.round)
 my.counts.round[1:5,1:5]
 
-# Prepare individual tissues datasets, and combined tissues (for MDS)
+# Prepare datasets (all, gill, digestive gland)
 # Create dataframe for all samples
 my.counts.round.all <- my.counts.round
 
 # Create dataframe for gill samples
-my.counts.round.gill <- my.counts.round[, grep(pattern = "\\.CG\\_G", x = colnames(my.counts.round))]
+gill.cols <- grep(pattern = "\\.CG\\_G", x = colnames(my.counts.round))
+annot.cols <- which(colnames(my.counts.round) %in% c("transcript.id", "uniprot.id", "bp", "ID", "Evalue"))
+retain.cols <- c(gill.cols, annot.cols)
+
+my.counts.round.gill <- my.counts.round[, retain.cols]
 dim(my.counts.round.gill)
 colnames(my.counts.round.gill)
 
 # Create dataframe for digestive gland (dig) samples
-my.counts.round.dig <- my.counts.round[, grep(pattern = "\\.CG\\_G", x = colnames(my.counts.round)
-                                              , invert = T)]
+dig.cols <- grep(pattern = "\\.CG\\_DG", x = colnames(my.counts.round))
+annot.cols <- which(colnames(my.counts.round) %in% c("transcript.id", "uniprot.id", "bp", "ID", "Evalue"))
+retain.cols <- c(dig.cols, annot.cols)
+
+my.counts.round.dig <- my.counts.round[, retain.cols]
 dim(my.counts.round.dig)
 colnames(my.counts.round.dig)
+
 
 # Create vector for all three datatypes
 datatypes <- c("all", "gill", "dig")
@@ -126,6 +126,7 @@ input_dataframes.list[["dig"]] <- my.counts.round.dig
 # User-set variables
 min.reads.mapping.per.transcript <- 10 # Variable to find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
 min.ind <- 5 # choose the minimum number of individuals that need to pass the threshold
+#TODO: these should be at the top
 
 # Use the list above and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
@@ -310,7 +311,30 @@ head(gill_specific_genes.vec)
 "25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
 
 
-#### 5. Differential expression ####
+#### 5. Export background list (expressed genes)
+datatypes
+gill.DGEList <- doi.DGEList.filt[["gill"]]
+dig.DGEList  <- doi.DGEList.filt[["dig"]] 
+
+head(gill.DGEList$genes)
+write.table(y$genes, file = " CG_DG_background_gene_list_OCT24_2021.txt")
+
+
+#### 6. Differential expression ####
+datatypes
+gill.DGEList <- doi.DGEList.filt[["gill"]]
+dig.DGEList  <- doi.DGEList.filt[["dig"]] 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
