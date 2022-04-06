@@ -25,21 +25,26 @@ options(scipen = 9999999)
 #### Read in annotation information ####
 # contig ID and uniprot ID
 id_and_uniprot_id.df <- read.table(file = gzfile("02_input_data/project155.uniprot_blastp.txt.gz"), sep = "\t", header = F)
+# TODO: add these filenames as user variables above
 colnames(id_and_uniprot_id.df) <- c("contig.id", "uniprot.id")
 head(id_and_uniprot_id.df)
+dim(id_and_uniprot_id.df)
 
 # contig ID and general annotation
 RPKM_and_annot.df <- read.table(file = "02_input_data/cgrnaseqBTv1.csv", header = T, sep = ",")
+# TODO: add these filenames as user variables above
 dim(RPKM_and_annot.df)
 head(RPKM_and_annot.df)
 
 RPKM_and_annot.df <- RPKM_and_annot.df[, which(colnames(RPKM_and_annot.df) %in% c("unigene", "ID", "Evalue", "bp"))] # which columns have useful annotation? 
 head(RPKM_and_annot.df)
+dim(RPKM_and_annot.df)
 
 # Combine contig ID and uniprot ID
-annot.df <- merge(x = id_and_uniprot_id.df, RPKM_and_annot.df, by.x = "contig.id", by.y = "unigene")
+annot.df <- merge(x = id_and_uniprot_id.df, RPKM_and_annot.df, by.x = "contig.id", by.y = "unigene", all.y = T)
 annot.df <- annot.df[,c("contig.id", "uniprot.id", "bp", "ID", "Evalue")] # reorder cols
 head(annot.df)
+dim(annot.df)
 
 
 #### Method 1. cpm data ####
@@ -51,21 +56,46 @@ pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv" # the original input
 phenos.df <- read.csv(file = pheno.FN)
 phenos.df$sample.id <- paste0("P", phenos.df$plot)
 
-phenos.df
+head(phenos.df)
 
 #### Read in raw count data ####
 # Import counts file (i.e. the final output from Simple_reads_to_counts repo)
 my.counts <- read.csv(file = "02_input_data/out.matrix.csv")
-my.counts[1:5,1:5]
+my.counts[1:5,1:5] # note that here the identifier is referred to as 'transcript.id', but is the same as 'contig.id' above
 
 # Set first column as rownames
 rownames(my.counts) <- my.counts[,1]
 my.counts[1:5, 1:5]
+dim(my.counts)
+my.counts <- round(x = my.counts, digits = 0) # Round all effective counts to the nearest whole number
+# Confirm this did not impact the transcript.id 
+table(my.counts$transcript.id==rownames(my.counts)) # All rows should show TRUE here
 
-# Round all expression levels to no decimal place, remove transcript.id column (now rownames)
-my.counts.round <- round(my.counts[,-1])
-str(my.counts.round) # should be numeric
-my.counts.round[1:5, 1:5]
+
+#### Add annotation information ####
+my.counts <- merge(x = my.counts, y = annot.df, by.x = "transcript.id", by.y = "contig.id", all.x = T) # use all.x = T in order to ensure contigs that are not in the annotation are retained
+dim(my.counts)
+head(my.counts)
+# note: we lose rownames here, so add them again
+rownames(my.counts) <- my.counts[,"transcript.id"]
+my.counts[1:5,1:5]
+
+
+# # Round all expression levels to no decimal place, remove transcript.id column (now rownames)
+# my.counts <- my.counts[,-1]
+# 
+# # Which columns are sample data cols? 
+# sample.cols <- grep(pattern = "eff.counts", colnames(x = my.counts))
+# 
+# # Which columns are annotation data? 
+# annot.cols <- grep(pattern = "eff.counts", colnames(x = my.counts), invert = T)
+
+my.counts.round <- my.counts # Use variable as per rest of script
+head(my.counts.round)
+str(my.counts.round) # Sample info should be numeric (NOTE: #TODO: This was due to using 'round' on the full dataset above)
+my.counts.round$transcript.id <- as.character(my.counts.round$transcript.id)
+head(my.counts.round)
+my.counts.round[1:5,1:5]
 
 # Prepare individual tissues datasets, and combined tissues (for MDS)
 # Create dataframe for all samples
@@ -106,8 +136,10 @@ for(i in 1:length(datatypes)){
   # Select the datatypes
   doi <- input_dataframes.list[[datatypes[i]]]
   
-  # create DGElist
-  doi.DGEList <- DGEList(counts = doi)
+  # create DGElist, with both counts and genes
+  doi.DGEList <- DGEList(counts = doi[, grep(pattern = "eff.counts", x = colnames(doi))]
+                         , genes = doi[, grep(pattern = "eff.counts", x = colnames(doi), invert = T)]
+                         )
   
   # Statistics on library sizes
   doi.summary[[paste0(datatypes[[i]], "_align_summary")]]    <- summary(doi.DGEList$samples$lib.size)
