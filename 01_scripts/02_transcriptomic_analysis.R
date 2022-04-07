@@ -19,20 +19,29 @@ current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path) # take main directory
 setwd(current.path)
 
+## User set filenames:
+uniprot.FN <- "02_input_data/project155.uniprot_blastp.txt.gz"
+contig_annot.FN <- "02_input_data/cgrnaseqBTv1.csv"
+input.FN <- "02_input_data/out.matrix.csv"
+pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv"
+
+## User-set variables
+min.reads.mapping.per.transcript <- 10 # Variable to find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
+min.ind <- 5 # choose the minimum number of individuals that need to pass the threshold
+
 ## Plotting options
 options(scipen = 9999999)
 
+
 #### Read in annotation information ####
 # contig ID and uniprot ID
-id_and_uniprot_id.df <- read.table(file = gzfile("02_input_data/project155.uniprot_blastp.txt.gz"), sep = "\t", header = F)
-# TODO: add these filenames as user variables above
+id_and_uniprot_id.df <- read.table(file = gzfile(uniprot.FN), sep = "\t", header = F)
 colnames(id_and_uniprot_id.df) <- c("contig.id", "uniprot.id")
 head(id_and_uniprot_id.df)
 dim(id_and_uniprot_id.df)
 
 # contig ID and general annotation
-RPKM_and_annot.df <- read.table(file = "02_input_data/cgrnaseqBTv1.csv", header = T, sep = ",")
-# TODO: add these filenames as user variables above
+RPKM_and_annot.df <- read.table(file = contig_annot.FN, header = T, sep = ",")
 dim(RPKM_and_annot.df)
 head(RPKM_and_annot.df)
 
@@ -47,12 +56,7 @@ head(annot.df)
 dim(annot.df)
 
 
-#### Method 1. cpm data ####
-# Set input filenames
-input.FN <- "02_input_data/out.matrix.csv"
-pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv" # the original input filename
-#TODO: these should be further up
-
+#### 1. cpm data ####
 #### Read in phenotype data ####
 phenos.df <- read.csv(file = pheno.FN)
 phenos.df$sample.id <- paste0("P", phenos.df$plot)
@@ -123,10 +127,6 @@ input_dataframes.list[["dig"]] <- my.counts.round.dig
 
 
 #### Per datatype analysis, filter ####
-# User-set variables
-min.reads.mapping.per.transcript <- 10 # Variable to find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
-min.ind <- 5 # choose the minimum number of individuals that need to pass the threshold
-#TODO: these should be at the top
 
 # Use the list above and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
@@ -141,6 +141,9 @@ for(i in 1:length(datatypes)){
   doi.DGEList <- DGEList(counts = doi[, grep(pattern = "eff.counts", x = colnames(doi))]
                          , genes = doi[, grep(pattern = "eff.counts", x = colnames(doi), invert = T)]
                          )
+  
+  # How many columns of annotation info? 
+  dim(doi.DGEList$genes)
   
   # Statistics on library sizes
   doi.summary[[paste0(datatypes[[i]], "_align_summary")]]    <- summary(doi.DGEList$samples$lib.size)
@@ -220,74 +223,74 @@ for(i in 1:length(datatypes)){
   }
 
 
-#### Exploratory MDS plots, remains early draft ####
-datatypes
-#doi <- doi.DGEList.filt[["all"]] # choose from
-#doi <- doi.DGEList.filt[["gill"]] # choose from
-#doi <- doi.DGEList.filt[["dig"]] # choose from
-
-# What are the samples, and in what order?
-sample_order.df <- rownames(doi$samples)
-sample_order.df <- as.data.frame(sample_order.df)
-colnames(sample_order.df)[1] <- "RNAseq.id"
-sample_order.df
-
-#sample_order.df$match.id <- sample_order.df$RNAseq.id
-
-sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
-                      , sep = "_P", into = c("drop", "plot_and_suffix")
-                       #, remove = FALSE
-                      )
-
-sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
-                            , sep = "\\.eff", into = c("plot", "suffix")
-                            #, remove = FALSE
-)
-
-sample_order.df
-sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
-
-# Put the phenotypes dataframe into the same order as the samples in the DGEList
-phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
-
-ordered_phenos.df <- phenos_for_present_samples.df[order(match(phenos_for_present_samples.df[,"sample.id"], sample_order.df[,"sample.id"])),]
-head(ordered_phenos.df)
-
-ordered_phenos.df$sample.id
-sample_order.df$sample.id
-
-# Selecting custom labels for MDS Plot 
-# What do we have to choose from? 
-colnames(ordered_phenos.df)
-
-# Type, Beach, sample.id
-custom_labels <- paste0(ordered_phenos.df$Type, "_"
-                        , ordered_phenos.df$beach, "_"
-                        , ordered_phenos.df$sample.id 
-       )
-
-# Survival, Beach, sample.id
-custom_labels <- paste0(ordered_phenos.df$surv, "_"
-                        , ordered_phenos.df$beach, "_"
-                        , ordered_phenos.df$sample.id 
-)
-
-# Sand, silt, sample.id
-custom_labels <- paste0(ordered_phenos.df$sand, "_"
-                        , ordered_phenos.df$silt, "_"
-                        , ordered_phenos.df$sample.id 
-)
-
-# Day, Carbon, sample.id
-custom_labels <- paste0(ordered_phenos.df$day, "_"
-                        , ordered_phenos.df$carb, "_"
-                        , ordered_phenos.df$sample.id 
-)
-
-
-# Plot
-plotMDS(x = doi, cex= 0.8, labels = custom_labels)
-# save out as 5 x 8
+# #### Exploratory MDS plots, remains early draft (bjgs) ####
+# datatypes
+# #doi <- doi.DGEList.filt[["all"]] # choose from
+# #doi <- doi.DGEList.filt[["gill"]] # choose from
+# #doi <- doi.DGEList.filt[["dig"]] # choose from
+# 
+# # What are the samples, and in what order?
+# sample_order.df <- rownames(doi$samples)
+# sample_order.df <- as.data.frame(sample_order.df)
+# colnames(sample_order.df)[1] <- "RNAseq.id"
+# sample_order.df
+# 
+# #sample_order.df$match.id <- sample_order.df$RNAseq.id
+# 
+# sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
+#                       , sep = "_P", into = c("drop", "plot_and_suffix")
+#                        #, remove = FALSE
+#                       )
+# 
+# sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
+#                             , sep = "\\.eff", into = c("plot", "suffix")
+#                             #, remove = FALSE
+# )
+# 
+# sample_order.df
+# sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
+# 
+# # Put the phenotypes dataframe into the same order as the samples in the DGEList
+# phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
+# 
+# ordered_phenos.df <- phenos_for_present_samples.df[order(match(phenos_for_present_samples.df[,"sample.id"], sample_order.df[,"sample.id"])),]
+# head(ordered_phenos.df)
+# 
+# ordered_phenos.df$sample.id
+# sample_order.df$sample.id
+# 
+# # Selecting custom labels for MDS Plot 
+# # What do we have to choose from? 
+# colnames(ordered_phenos.df)
+# 
+# # Type, Beach, sample.id
+# custom_labels <- paste0(ordered_phenos.df$Type, "_"
+#                         , ordered_phenos.df$beach, "_"
+#                         , ordered_phenos.df$sample.id 
+#        )
+# 
+# # Survival, Beach, sample.id
+# custom_labels <- paste0(ordered_phenos.df$surv, "_"
+#                         , ordered_phenos.df$beach, "_"
+#                         , ordered_phenos.df$sample.id 
+# )
+# 
+# # Sand, silt, sample.id
+# custom_labels <- paste0(ordered_phenos.df$sand, "_"
+#                         , ordered_phenos.df$silt, "_"
+#                         , ordered_phenos.df$sample.id 
+# )
+# 
+# # Day, Carbon, sample.id
+# custom_labels <- paste0(ordered_phenos.df$day, "_"
+#                         , ordered_phenos.df$carb, "_"
+#                         , ordered_phenos.df$sample.id 
+# )
+# 
+# 
+# # Plot
+# plotMDS(x = doi, cex= 0.8, labels = custom_labels)
+# # save out as 5 x 8
 
 
 #### 4. Tissue-specific expression ####
@@ -312,20 +315,62 @@ head(gill_specific_genes.vec)
 
 
 #### 5. Export background list (expressed genes)
-datatypes
-gill.DGEList <- doi.DGEList.filt[["gill"]]
-dig.DGEList  <- doi.DGEList.filt[["dig"]] 
-
-head(gill.DGEList$genes)
-write.table(y$genes, file = " CG_DG_background_gene_list_OCT24_2021.txt")
+write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
+write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
 
 
 #### 6. Differential expression ####
 datatypes
-gill.DGEList <- doi.DGEList.filt[["gill"]]
-dig.DGEList  <- doi.DGEList.filt[["dig"]] 
+dig.DGEList
+
+#### HERE ####
+
+# Estimate dispersions
+dig.DGEList <- estimateCommonDisp(dig.DGEList)
+dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
+dig.DGEList <- estimateGLMTagwiseDisp(dig.DGEList)
+#TODO: confirm these do not write over each other
+
+dig.DGEList
+
+#gill.DGEList
+
+# Phenos are here 
+head(phenos.df)
+
+# Use previously developed method to connect the dataframe based on the order of the samples in the DGElist
+dig.DGEList$samples
+
+# Then use this in a model matrix command, as per: 
+
+#### OLD CODE ####
+# Want to look at interactions between time and treatment
+design <- model.matrix(~ 0 + Group)
+#design <- model.matrix(~targets.full$Treat * targets.full$Time)
+#design <- model.matrix(~targets$Treat + targets$Time + targets$Treat:targets$Time)
+#fit <- glmQLFit(y, design)
+colnames(design)
+#colnames(design) <- levels(targets.full$Group)
+
+my.contrasts <- makeContrasts(
+  ABvsCD = (GroupCG.A + GroupRef.B) - (GroupCG.C + GroupRef.D),
+  ABvsEF = (GroupCG.A + GroupRef.B) - (GroupCG.E + GroupRef.F),
+  CDvsEF = (GroupCG.C + GroupRef.D) - (GroupCG.E + GroupRef.F), levels = design)
+#
+fit <- glmQLFit(y, design)
+
+anov <- glmQLFTest(fit, contrast = my.contrasts)
+topTags(anov, n= 23200)
+
+o <- order(anov$table$PValue)
+cpm(y)[o[1:23200],]
+tab <- cpm(y)[o[1:23200],]
+write.table(tab, file = "CG_G_AB_CD_EF_ANOVA_cpm_top genes_Oct24.2021.txt")
 
 
+heatmap(tab)
+#### \END\ OLD CODE ####
+# Many more examples provided
 
 
 
