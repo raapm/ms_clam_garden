@@ -316,18 +316,22 @@ head(gill_specific_genes.vec)
 
 #### 08. Export background list (expressed genes)
 write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
-write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
+write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F)
 
 
 #### 09. Differential expression ####
 datatypes
 dig.DGEList
 
-#### HERE ####
+# Define group
+head(phenos.df) # Phenos are here 
 
-# Estimate dispersions
-dig.DGEList <- estimateCommonDisp(dig.DGEList)
+
+# Estimate dispersions for multiple group experiment (CG/control)
+dig.DGEList <- estimateCommonDisp(y = dig.DGEList)
 dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
+
+
 dig.DGEList <- estimateGLMTagwiseDisp(dig.DGEList)
 #TODO: confirm these do not write over each other
 
@@ -335,8 +339,8 @@ dig.DGEList
 
 #gill.DGEList
 
-# Phenos are here 
-head(phenos.df)
+
+head(phenos.df) # Phenos are here 
 
 # Use previously developed method to connect the dataframe based on the order of the samples in the DGElist
 dig.DGEList$samples
@@ -344,23 +348,17 @@ dig.DGEList$samples
 # Then use this in a model matrix command, as per: 
 
 ##### v.0.1 code from CG_edgeR_AB_CD_EF_ANOVA.R #####
-##############
-# Clustering, heatmaps etc..
-
-# logcpm <- cpm(y, prior.count = 2, log = TRUE)
-# plotMDS(logcpm)
-
 
 #### Estimation Dispersion ####
 # Gives a common dispersion
-y <- estimateCommonDisp(y)
+y <- estimateCommonDisp(dig.DGEList)
 
 # estimate tagwise and common in one run (recommended)
 #y <- estimateDisp(y)
 
 # estimate Tagwise dispersions
 y <- estimateTagwiseDisp(y)
-y <- estimateGLMTagwiseDisp(y)
+#y <- estimateGLMTagwiseDisp(y)
 
 ##################################################################
 
@@ -375,8 +373,8 @@ y <- estimateGLMTagwiseDisp(y)
 # Defining each treatment combination as a group
 
 # The data frame targets describes the treatment conditions applied to each sample
-
-targets <- read.csv("cgtargetsv1.csv", header = TRUE)
+targets <- read.csv("02_input_data/cgtargetsv1.csv", header = TRUE)
+#targets <- read.csv("cgtargetsv1.csv", header = TRUE)
 targets <- targets[1:14,]
 
 # Combine all the experimental factors into one combined factor
@@ -388,12 +386,9 @@ cbind(targets, Group = Group)
 #targets.full$Treat <- relevel(targets$Treat, ref = "Control")
 #targets$Treat <- relevel(targets$Treat, ref = "Control")
 
-# Each treatment time for each treatment is a group
-
 #################################################################
 ####  Form design matrix  ####
 ################################################################
-
 
 # Try with linear models: 
 # Want to look at interactions between time and treatment
