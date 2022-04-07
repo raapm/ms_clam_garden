@@ -14,6 +14,8 @@
 library("limma")
 library("edgeR")
 
+#### 00. Front Matter ####
+
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path) # take main directory
@@ -32,8 +34,7 @@ min.ind <- 5 # choose the minimum number of individuals that need to pass the th
 ## Plotting options
 options(scipen = 9999999)
 
-
-#### Read in annotation information ####
+#### 01a. Import Annotation ####
 # contig ID and uniprot ID
 id_and_uniprot_id.df <- read.table(file = gzfile(uniprot.FN), sep = "\t", header = F)
 colnames(id_and_uniprot_id.df) <- c("contig.id", "uniprot.id")
@@ -55,15 +56,14 @@ annot.df <- annot.df[,c("contig.id", "uniprot.id", "bp", "ID", "Evalue")] # reor
 head(annot.df)
 dim(annot.df)
 
-
-#### 1. cpm data ####
-#### Read in phenotype data ####
+#### 01b. Import Phenotypes ####
 phenos.df <- read.csv(file = pheno.FN)
 phenos.df$sample.id <- paste0("P", phenos.df$plot)
 
 head(phenos.df)
 
-#### Read in raw count data ####
+
+#### 02. Import count data ####
 # Import counts file (i.e. the final output from Simple_reads_to_counts repo)
 my.counts <- read.csv(file = "02_input_data/out.matrix.csv")
 my.counts[1:5,1:5] # note that here the identifier is referred to as 'transcript.id', but is the same as 'contig.id' above
@@ -73,15 +73,16 @@ rownames(my.counts) <- my.counts[,1]
 my.counts[1:5, 1:5]
 dim(my.counts)
 my.counts <- round(x = my.counts, digits = 0) # Round all effective counts to the nearest whole number
+
 # Confirm this did not impact the transcript.id 
 table(my.counts$transcript.id==rownames(my.counts)) # All rows should show TRUE here
 
-
-#### Add annotation information ####
+# Add annotation information count data
 my.counts <- merge(x = my.counts, y = annot.df, by.x = "transcript.id", by.y = "contig.id", all.x = T) # use all.x = T in order to ensure contigs that are not in the annotation are retained
 dim(my.counts)
 head(my.counts)
-# note: we lose rownames here, so add them again
+
+# Note: we lose rownames here, so add them again
 rownames(my.counts) <- my.counts[,"transcript.id"]
 my.counts[1:5,1:5]
 
@@ -93,7 +94,8 @@ my.counts.round$transcript.id <- as.character(my.counts.round$transcript.id)
 head(my.counts.round)
 my.counts.round[1:5,1:5]
 
-# Prepare datasets (all, gill, digestive gland)
+
+#### 03. Prepare datasets (all, gill, dig) ####
 # Create dataframe for all samples
 my.counts.round.all <- my.counts.round
 
@@ -115,7 +117,6 @@ my.counts.round.dig <- my.counts.round[, retain.cols]
 dim(my.counts.round.dig)
 colnames(my.counts.round.dig)
 
-
 # Create vector for all three datatypes
 datatypes <- c("all", "gill", "dig")
 
@@ -126,8 +127,7 @@ input_dataframes.list[["gill"]] <- my.counts.round.gill
 input_dataframes.list[["dig"]] <- my.counts.round.dig
 
 
-#### Per datatype analysis, filter ####
-
+#### 04. Create DGELists and Filter  ####
 # Use the list above and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
 
@@ -172,7 +172,7 @@ for(i in 1:length(datatypes)){
 }
 
 
-#### 3. Normalization and Data Visualization ####
+#### 5. Normalization and Data Visualization ####
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
 
@@ -223,7 +223,7 @@ for(i in 1:length(datatypes)){
   }
 
 
-# #### Exploratory MDS plots, remains early draft (bjgs) ####
+# #### 06. Exploratory MDS plots, remains early draft (bjgs) ####
 # datatypes
 # #doi <- doi.DGEList.filt[["all"]] # choose from
 # #doi <- doi.DGEList.filt[["gill"]] # choose from
@@ -293,7 +293,7 @@ for(i in 1:length(datatypes)){
 # # save out as 5 x 8
 
 
-#### 4. Tissue-specific expression ####
+#### 07. Tissue-Specific Expression ####
 datatypes
 gill.DGEList <- doi.DGEList.filt[["gill"]]
 dig.DGEList  <- doi.DGEList.filt[["dig"]] 
@@ -314,12 +314,12 @@ head(gill_specific_genes.vec)
 "25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
 
 
-#### 5. Export background list (expressed genes)
+#### 08. Export background list (expressed genes)
 write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
 write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
 
 
-#### 6. Differential expression ####
+#### 09. Differential expression ####
 datatypes
 dig.DGEList
 
@@ -342,6 +342,150 @@ head(phenos.df)
 dig.DGEList$samples
 
 # Then use this in a model matrix command, as per: 
+
+##### v.0.1 code from CG_edgeR_AB_CD_EF_ANOVA.R #####
+##############
+# Clustering, heatmaps etc..
+
+# logcpm <- cpm(y, prior.count = 2, log = TRUE)
+# plotMDS(logcpm)
+
+
+#### Estimation Dispersion ####
+# Gives a common dispersion
+y <- estimateCommonDisp(y)
+
+# estimate tagwise and common in one run (recommended)
+#y <- estimateDisp(y)
+
+# estimate Tagwise dispersions
+y <- estimateTagwiseDisp(y)
+y <- estimateGLMTagwiseDisp(y)
+
+##################################################################
+
+##### Differential Expression ####
+
+
+
+## Differential Expression with all combinations of multiple factors
+
+############################################################
+
+# Defining each treatment combination as a group
+
+# The data frame targets describes the treatment conditions applied to each sample
+
+targets <- read.csv("cgtargetsv1.csv", header = TRUE)
+targets <- targets[1:14,]
+
+# Combine all the experimental factors into one combined factor
+Group <- factor(paste(targets$type, targets$beach, sep = "."))
+cbind(targets, Group = Group)
+#targets.full <- cbind(targets, Group = Group)
+
+# Set Control as the reference level
+#targets.full$Treat <- relevel(targets$Treat, ref = "Control")
+#targets$Treat <- relevel(targets$Treat, ref = "Control")
+
+# Each treatment time for each treatment is a group
+
+#################################################################
+####  Form design matrix  ####
+################################################################
+
+
+# Try with linear models: 
+# Want to look at interactions between time and treatment
+design <- model.matrix(~ 0 + Group)
+#design <- model.matrix(~targets.full$Treat * targets.full$Time)
+#design <- model.matrix(~targets$Treat + targets$Time + targets$Treat:targets$Time)
+#fit <- glmQLFit(y, design)
+colnames(design)
+
+#colnames(design) <- levels(targets.full$Group)
+
+#### Likelihood ratio test ####
+# fit <- glmFit(y, design) 
+
+
+# qlf <- glmQLFTest(fit, (fit)
+
+#### Quasi-Likelihood F test ####
+fit <- glmQLFit(y, design)
+
+# Estimating the dispersion
+# y <- estimate.QLFDisp(y, design, robust = TRUE)
+y$common.dispersion
+plotBCV(y)
+# y <- estimateQLFTagwiseDisp(y)
+# y$tagwise.dispersion
+
+##########################################################
+
+# Comparisons we might wish to make:
+
+########################################################33
+my.contrasts <- makeContrasts(
+  ABvsCD = (GroupCG.A + GroupRef.B) - (GroupCG.C + GroupRef.D),
+  ABvsEF = (GroupCG.A + GroupRef.B) - (GroupCG.E + GroupRef.F),
+  CDvsEF = (GroupCG.C + GroupRef.D) - (GroupCG.E + GroupRef.F), levels = design)
+#
+fit <- glmQLFit(y, design)
+
+anov <- glmQLFTest(fit, contrast = my.contrasts)
+topTags(anov, n= 23200)
+
+o <- order(anov$table$PValue)
+cpm(y)[o[1:23200],]
+tab <- cpm(y)[o[1:23200],]
+write.table(tab, file = "CG_G_AB_CD_EF_ANOVA_cpm_top genes_Oct24.2021.txt")
+
+
+tab <- topTags(anov, n = 23200)
+write.table(tab, file = "CG_G_AB_CD_EF_Anova_Oct24.2021.txt")
+#
+tab <- cpm(y)[o[1:150],]
+#
+#cn <- c("DR18","DC15","DC4","DC5","DC6","DR10", "DR11","DR12","DC1","DC2","DC3", "DR7", "DR8", "DR9") 
+#
+
+heatmap(tab)
+
+
+
+#my.contrasts <- makeContrasts( 
+#CG.1vsRef.4 = GroupCG.1 - GroupRef.4,
+#CG.2vsRef.3 = GroupCG.2 - GroupRef.3,
+#CG.5vsRef.6 = GroupCG.5 - GroupRef.6,
+#CGvsRef = (GroupCG.1 + GroupCG.2 + GroupCG.5) - (GroupRef.4 + GroupRef.3 + GroupRef.6), levels = design)
+#
+my.contrasts <- makeContrasts(
+  CGvRef = (GroupCG.1 + GroupCG.2 + GroupCG.5) - (GroupRef.3 = GroupRef.4 + GroupRef.6),
+  levels = design)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #### OLD CODE ####
 # Want to look at interactions between time and treatment
