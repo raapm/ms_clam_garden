@@ -13,6 +13,7 @@
 
 library("limma")
 library("edgeR")
+library("tidyr")
 
 #### 00. Front Matter ####
 
@@ -314,7 +315,7 @@ head(gill_specific_genes.vec)
 "25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
 
 
-#### 08. Export background list (expressed genes)
+#### 08. Export background list (expressed genes) ####
 write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
 write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F)
 
@@ -323,27 +324,74 @@ write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_lis
 datatypes
 dig.DGEList
 
-# Define group
+### Defining group ###
 head(phenos.df) # Phenos are here 
 
+# To define group, need to observe the order of the samples in the DGEList
+sample_order.df <- as.data.frame(rownames(dig.DGEList$samples))
+colnames(sample_order.df) <- "sample"
+head(sample_order.df)
+
+sample_order.df$sample <- gsub(pattern = ".eff.counts", replacement = "", x = sample_order.df$sample) # Remove suffix
+head(sample_order.df)
+
+sample_order.df <- separate(data = sample_order.df, col = "sample", into = c("prefix", "plot_and_suffix") # Separate string around <tissue>_<plot> identifier
+                      , sep = "CG_", remove = F)
+head(sample_order.df)
+
+sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix", into = c("tissue", "plot") # Separate <tissue>_<plot>
+                      , sep = "_", remove = T
+                      )
+head(sample_order.df)
+head(phenos.df) # This is the pheno data (regardless of tissue)
+# These are not necessarily in the same order
+
+# 
+str(sample_order.df)
+str(phenos.df$sample.id)
+
+# Ensure sample order is retained
+sample_order.df$DGEList.order <- seq(1:length(sample_order.df$sample)) # Create an index for the DGEList order
+
+samples_and_phenos.df <- merge(x = sample_order.df, y = phenos.df, by.x = "plot", by.y = "sample.id", all.x = T)
+dim(sample_order.df)
+dim(samples_and_phenos.df)
+
+samples_and_phenos.df # ensure there are no missing rows
+
+# Put back in the sample order defined by DGEList.order
+samples_and_phenos.df <- samples_and_phenos.df[order(samples_and_phenos.df$DGEList.order), ]
+
+# Visually compare
+as.data.frame(rownames(dig.DGEList$samples))
+samples_and_phenos.df
+cbind(sample_order.df$plot, samples_and_phenos.df$plot) # These should be in the same order
+
+colnames(samples_and_phenos.df)
+# Phenotype of Interest
+categorical_explan_variable <- "Type"
+
+# Assign this phenotype to the group vector in the DGEList
+dig.DGEList$samples$group <- as.factor(samples_and_phenos.df[, categorical_explan_variable])
+
+print("DGEList order, assigned group, ordered pheno.df type")
+cbind(samples_and_phenos.df$DGEList.order, dig.DGEList$samples$group, samples_and_phenos.df$Type)
+
+# # /START/ testing
+# # Testing effect of providing appropriate group levels
+# test_w_group <- estimateCommonDisp(y = dig.DGEList)
+# test_w_group$common.dispersion
+# 
+# test_w_all_same <- estimateCommonDisp(y = dig.DGEList)
+# test_w_all_same$common.dispersion
+# 
+# # These are indeed affected by the newly assigned group, as shown by a lower common dispersion
+# # /END/ testing
 
 # Estimate dispersions for multiple group experiment (CG/control)
-dig.DGEList <- estimateCommonDisp(y = dig.DGEList)
+dig.DGEList <- estimateCommonDisp(y = dig.DGEList) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
 dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
 
-
-dig.DGEList <- estimateGLMTagwiseDisp(dig.DGEList)
-#TODO: confirm these do not write over each other
-
-dig.DGEList
-
-#gill.DGEList
-
-
-head(phenos.df) # Phenos are here 
-
-# Use previously developed method to connect the dataframe based on the order of the samples in the DGElist
-dig.DGEList$samples
 
 # Then use this in a model matrix command, as per: 
 
