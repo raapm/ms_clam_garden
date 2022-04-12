@@ -326,78 +326,96 @@ datatypes
 #dig.DGEList
 #gill.DGEList
 
-### Defining group ###
-head(phenos.df) # Phenos are here 
+lists_of_interest <- list()
+lists_of_interest[["dig"]] <- dig.DGEList
+lists_of_interest[["gill"]] <- gill.DGEList
 
-## Define group based on order of the samples in the DGEList
-sample_order.df <- as.data.frame(rownames(dig.DGEList$samples))
-colnames(sample_order.df) <- "sample"
-head(sample_order.df)
+names(lists_of_interest)
 
-# Remove suffix
-sample_order.df$sample <- gsub(pattern = ".eff.counts", replacement = "", x = sample_order.df$sample)
-head(sample_order.df)
+datatype_current <- NULL
+for(i in 1:length(names(lists_of_interest))){
+  
+  target_list <- lists_of_interest[[i]]
+  datatype_current <- names(lists_of_interest)[i]
+  
+  ### Defining group ###
+  head(phenos.df) # Phenos are here 
+  
+  ## Define group based on order of the samples in the DGEList
+  sample_order.df <- as.data.frame(rownames(target_list$samples))
+  colnames(sample_order.df) <- "sample"
+  head(sample_order.df)
+  
+  # Remove suffix
+  sample_order.df$sample <- gsub(pattern = ".eff.counts", replacement = "", x = sample_order.df$sample)
+  head(sample_order.df)
+  
+  # Isolate <tissue>_<plot> identifier
+  sample_order.df <- separate(data = sample_order.df, col = "sample", into = c("prefix", "plot_and_suffix")
+                              , sep = "CG_", remove = F)
+  head(sample_order.df)
+  
+  # Separate <tissue>_<plot>
+  sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix", into = c("tissue", "plot")
+                              , sep = "_", remove = T
+  )
+  head(sample_order.df)
+  head(phenos.df) # This is the pheno data (regardless of tissue)
+  # Do not assume these are in same order
+  str(sample_order.df)
+  str(phenos.df$sample.id) # Both should be character vectors
+  
+  # Retain DGEList sample order using an index
+  sample_order.df$DGEList.order <- seq(1:length(sample_order.df$sample))
+  head(sample_order.df)
+  
+  # Combine the phenos with the DGEList sample names
+  samples_and_phenos.df <- merge(x = sample_order.df, y = phenos.df, by.x = "plot", by.y = "sample.id", all.x = T)
+  samples_and_phenos.df # ensure there are no missing rows
+  
+  # Return to sample order defined by DGEList.order index
+  samples_and_phenos.df <- samples_and_phenos.df[order(samples_and_phenos.df$DGEList.order), ]
+  
+  # Visually compare and confirm
+  #as.data.frame(rownames(dig.DGEList$samples))
+  #samples_and_phenos.df
+  cbind(sample_order.df$plot, samples_and_phenos.df$plot) # These should be in the same order
+  table(sample_order.df$plot == samples_and_phenos.df$plot)
+  #print("DGEList order, assigned group, ordered pheno.df type")
+  #cbind(samples_and_phenos.df$DGEList.order, dig.DGEList$samples$group, samples_and_phenos.df$Type)
+  
+  #### Phenotype of Interest: Clam Garden ####
+  colnames(samples_and_phenos.df)
+  # Set your explanatory variable
+  categorical_explan_variable <- "Type"
+  
+  # Assign this phenotype to the group vector in the DGEList
+  grouping.vec <- as.factor(samples_and_phenos.df[, categorical_explan_variable])
+  grouping.vec <- relevel(x = grouping.vec, ref = "Ref") # Assign the reference as the reference factor level
+  target_list$samples$group <- grouping.vec
+  target_list$samples$group
+  
+  # Estimate dispersions for multiple group experiment
+  target_list <- estimateCommonDisp(y = target_list) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
+  target_list <- estimateTagwiseDisp(target_list)
+  
+  # Build model design
+  design <- model.matrix(~target_list$samples$group)
+  fit <- glmQLFit(y = target_list, design = design)
+  results <- glmQLFTest(glmfit = fit)
+  all_results <- topTags(object = results
+                         , n = length(target_list$genes$transcript.id)
+                         , adjust.method = "none"
+                         , p.value = 0.001
+  )
+  
+  output.FN <- paste0("04_txomic_results/DE_results_CG_v_REF_", datatype_current, ".txt")
+  
+  write.table(x = all_results, file = output.FN, quote = F, sep = "\t", row.names = F)
+  
+}
 
-# Isolate <tissue>_<plot> identifier
-sample_order.df <- separate(data = sample_order.df, col = "sample", into = c("prefix", "plot_and_suffix")
-                      , sep = "CG_", remove = F)
-head(sample_order.df)
 
-# Separate <tissue>_<plot>
-sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix", into = c("tissue", "plot")
-                      , sep = "_", remove = T
-                      )
-head(sample_order.df)
-head(phenos.df) # This is the pheno data (regardless of tissue)
-# Do not assume these are in same order
-str(sample_order.df)
-str(phenos.df$sample.id) # Both should be character vectors
-
-# Retain DGEList sample order using an index
-sample_order.df$DGEList.order <- seq(1:length(sample_order.df$sample))
-head(sample_order.df)
-
-# Combine the phenos with the DGEList sample names
-samples_and_phenos.df <- merge(x = sample_order.df, y = phenos.df, by.x = "plot", by.y = "sample.id", all.x = T)
-samples_and_phenos.df # ensure there are no missing rows
-
-# Return to sample order defined by DGEList.order index
-samples_and_phenos.df <- samples_and_phenos.df[order(samples_and_phenos.df$DGEList.order), ]
-
-# Visually compare and confirm
-#as.data.frame(rownames(dig.DGEList$samples))
-#samples_and_phenos.df
-cbind(sample_order.df$plot, samples_and_phenos.df$plot) # These should be in the same order
-table(sample_order.df$plot == samples_and_phenos.df$plot)
-print("DGEList order, assigned group, ordered pheno.df type")
-#cbind(samples_and_phenos.df$DGEList.order, dig.DGEList$samples$group, samples_and_phenos.df$Type)
-
-#### Phenotype of Interest: Clam Garden ####
-colnames(samples_and_phenos.df)
-# Set your explanatory variable
-categorical_explan_variable <- "Type"
-
-# Assign this phenotype to the group vector in the DGEList
-grouping.vec <- as.factor(samples_and_phenos.df[, categorical_explan_variable])
-grouping.vec <- relevel(x = grouping.vec, ref = "Ref") # Assign the reference as the reference factor level
-dig.DGEList$samples$group <- grouping.vec
-dig.DGEList$samples$group
-
-# Estimate dispersions for multiple group experiment
-dig.DGEList <- estimateCommonDisp(y = dig.DGEList) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
-dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
-
-# Build model design
-design <- model.matrix(~dig.DGEList$samples$group)
-fit <- glmQLFit(y = dig.DGEList, design = design)
-results <- glmQLFTest(glmfit = fit)
-all_results <- topTags(object = results
-                       , n = length(dig.DGEList$genes$transcript.id)
-                       , adjust.method = "none"
-                       , p.value = 0.001
-                       )
-
-write.table(x = all_results, file = "04_txomic_results/DE_results_CG_v_REF.txt", quote = F, sep = "\t", row.names = F)
 
 
 # Phenotype of Interest 2 #
