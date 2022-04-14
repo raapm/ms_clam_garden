@@ -311,15 +311,22 @@ dig_specific_genes.vec  <- setdiff(x = expr_dig.vec, y = expr_gill.vec)
 length(gill_specific_genes.vec)
 length(dig_specific_genes.vec)
 
-# Data check: 
-head(gill_specific_genes.vec)
-"25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
+# Collect the annotation for tissue-specific genes
+gill_specific_annot.df <- gill.DGEList$genes[gill.DGEList$genes$transcript.id %in% gill_specific_genes.vec, ]
+dig_specific_annot.df <- dig.DGEList$genes[dig.DGEList$genes$transcript.id %in% dig_specific_genes.vec, ]
+
+# # Data check: 
+# head(gill_specific_genes.vec)
+# "25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
+
+# Export tissue-specific genes and associated annotation
+write.table(x = gill_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_gill.txt", sep = "\t", quote = F)
+write.table(x = dig_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_dig.txt", sep = "\t", quote = F)
 
 
 #### 08. Export background list (expressed genes) ####
 write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
 write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F)
-
 
 #### 09. Differential expression ####
 datatypes
