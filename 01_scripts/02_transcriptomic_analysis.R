@@ -415,52 +415,123 @@ for(i in 1:length(names(lists_of_interest))){
   
 }
 
+# Create backup
+samples_and_phenos.bck <- samples_and_phenos.df
 
 
+#### Phenotype of Interest 2: Carbonate ####
+colnames(samples_and_phenos.df)
 
-# Phenotype of Interest 2 #
-#### WORKING HERE #####
 # Estimate dispersions for multiple group experiment (numeric carbonates)
-dig.DGEList$samples$group <- rep(1, times = length(dig.DGEList$samples$group))
-dig.DGEList <- estimateCommonDisp(y = dig.DGEList) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
-dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
-
 colnames(samples_and_phenos.df)
 explan_variable <- "carb"
 
+length(samples_and_phenos.df[, explan_variable])
+summary(samples_and_phenos.df[, explan_variable])
+
+table(samples_and_phenos.df[, explan_variable] <= 3.25)
+table(samples_and_phenos.df[, explan_variable] > 3.25 & samples_and_phenos.df[, explan_variable] < 8)
+table(samples_and_phenos.df[, explan_variable] >= 8)
+
+# Assign bins
+head(samples_and_phenos.df)
+samples_and_phenos.df$carb.bins <- rep(NA, times = length(samples_and_phenos.df[, explan_variable]))
+samples_and_phenos.df[which(samples_and_phenos.df[, explan_variable] <= 3.25), "carb.bins"] <- "low"
+samples_and_phenos.df[which(samples_and_phenos.df[, explan_variable] >= 8), "carb.bins"] <- "high"
+samples_and_phenos.df[which(samples_and_phenos.df[, explan_variable] > 3.25 & 
+                              samples_and_phenos.df[, explan_variable] < 8)
+                      , "carb.bins"] <- "med"
+
+samples_and_phenos.df[,c("carb", "carb.bins")]
+
+# Use the variable carb.bins for linear model
+categorical_explan_variable <- "carb.bins"
+
+#### TEMPORARY ####
+target_list <- lists_of_interest[["dig"]]
+datatype_current <- "dig"
+#target_list <- lists_of_interest[["gill"]]
+
 # Assign this phenotype to the group vector in the DGEList
-grouping.vec <- samples_and_phenos.df[, explan_variable]
+grouping.vec <- as.factor(samples_and_phenos.df[, categorical_explan_variable])
+grouping.vec <- relevel(x = grouping.vec, ref = "low") # Assign the low as the reference factor level
+target_list$samples$group <- grouping.vec
+target_list$samples$group
 
-design <- model.matrix(~grouping.vec)
-design
-
-fit <- glmQLFit(y = dig.DGEList, design = design)
-results <- glmQLFTest(glmfit = fit)
-all_results <- topTags(object = results, n = length(dig.DGEList$genes$transcript.id))
-write.table(x = all_results, file = "04_txomic_results/DE_results_carbonate_lm.txt", quote = F, sep = "\t", row.names = F)
-#### NOT WORKING YET ####
-
-# Differential expression
-# Estimate dispersions for multiple group experiment (CG/control)
-dig.DGEList <- estimateCommonDisp(y = dig.DGEList) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
-dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
+# Estimate dispersions for multiple group experiment
+target_list <- estimateCommonDisp(y = target_list) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
+target_list <- estimateTagwiseDisp(target_list)
 
 # Build model design
-design <- model.matrix(~dig.DGEList$samples$group)
-fit <- glmQLFit(y = dig.DGEList, design = design)
-results <- glmQLFTest(glmfit = fit)
-all_results <- topTags(object = results, n = length(dig.DGEList$genes$transcript.id))
-write.table(x = all_results, file = "04_txomic_results/DE_results_CG_v_REF.txt", quote = F, sep = "\t", row.names = F)
+design <- model.matrix(~0+target_list$samples$group) # Inclusion of 0 allows one to specify the reference when doing multiple contrasts
+fit <- glmQLFit(y = target_list, design = design)
+
+colnames(design) <- c("grouplow", "grouphigh", "groupmed") # Do this with gsub #TODO#
+
+# Provide contrasts, since there are more than two groups
+my.contrasts <- makeContrasts(   groupmed-grouplow
+                               , grouphigh-grouplow
+                               , grouphigh-groupmed
+                               , levels=colnames(design)
+)
+
+results <- glmQLFTest(glmfit = fit, contrast = my.contrasts)
+all_results <- topTags(object = results
+                       , n = length(target_list$genes$transcript.id)
+                       , adjust.method = "none"
+                       , p.value = 0.001
+)
+
+output.FN <- paste0("04_txomic_results/DE_results_carbonate_", datatype_current, ".txt")
+
+write.table(x = all_results, file = output.FN, quote = F, sep = "\t", row.names = F)
+
+# ##### EXAMPLE #####
+# design <- model.matrix(~0+treatment)
+# contrasts <- makeContrasts( treatmentI-treatmentCTL
+#                             , treatmentII-treatmentCTL
+#                             , treatmentIII-treatmentCTL
+#                             , treatmentII-treatmentI
+#                             , treatmentIII-treatmentI
+#                             , treatmentIII-treatmentII
+#                             , levels=colnames(design)
+#                             )
+# colnames(contrasts) <- abbreviate(colnames(contrasts)) contrasts
+# ## Contrasts
+# ## Levels tI-tC ## treatmentCTL -1 ## treatmentI 1 ##treatmentII 0 ## treatmentIII 0
+# tII-tC tIII-tC -1 -1 0 0 1 0 0 1
+# tII-tI trIII-tI tIII-tII 0 0 0 -1 -1 0 1 0 -1 0 1 1
 
 
-# Phenotype of Interest 3 #
-# Try with bins 
-length(samples_and_phenos.df$carb)
-summary(samples_and_phenos.df$carb)
-table(samples_and_phenos.df$carb <= 3.25)
-table(samples_and_phenos.df$carb >= 8)
-table(samples_and_phenos.df$carb > 3.25 & samples_and_phenos.df$carb < 8)
-table()
+
+
+
+##### EXAMPLE ONLY #####
+##########################################################
+
+# Comparisons we might wish to make:
+
+########################################################33
+my.contrasts <- makeContrasts(
+  ABvsCD = (GroupCG.A + GroupRef.B) - (GroupCG.C + GroupRef.D),
+  ABvsEF = (GroupCG.A + GroupRef.B) - (GroupCG.E + GroupRef.F),
+  CDvsEF = (GroupCG.C + GroupRef.D) - (GroupCG.E + GroupRef.F), levels = design)
+#
+fit <- glmQLFit(y, design)
+
+anov <- glmQLFTest(fit, contrast = my.contrasts)
+topTags(anov, n= 23200)
+
+o <- order(anov$table$PValue)
+cpm(y)[o[1:23200],]
+tab <- cpm(y)[o[1:23200],]
+write.table(tab, file = "CG_G_AB_CD_EF_ANOVA_cpm_top genes_Oct24.2021.txt")
+##### /END/ EXAMPLE ONLY ####
+
+
+
+
+
 
 ###### NEXT STEPS: ######
 # 1. Assign factors to the bins of low, med, high carbonate
@@ -478,6 +549,9 @@ table()
 # # These are indeed affected by the newly assigned group, as shown by a lower common dispersion
 # # /END/ testing
 
+dig.DGEList$samples$group <- rep(1, times = length(dig.DGEList$samples$group))
+dig.DGEList <- estimateCommonDisp(y = dig.DGEList) # Group is already assigned to the DGEList and should not be supplied here or will produce error. The function automatically uses the held group. 
+dig.DGEList <- estimateTagwiseDisp(dig.DGEList)
 
 
 
