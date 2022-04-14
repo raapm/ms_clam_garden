@@ -320,13 +320,22 @@ dig_specific_annot.df <- dig.DGEList$genes[dig.DGEList$genes$transcript.id %in% 
 # "25341993" %in% rownames(gill.DGEList$counts) # to confirm the correct reading of setdiff
 
 # Export tissue-specific genes and associated annotation
-write.table(x = gill_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_gill.txt", sep = "\t", quote = F)
-write.table(x = dig_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_dig.txt", sep = "\t", quote = F)
+write.table(x = gill_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_gill.txt", sep = "\t", quote = F
+            , row.names = F)
+write.table(x = dig_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_dig.txt", sep = "\t", quote = F
+            , row.names = F)
 
 
 #### 08. Export background list (expressed genes) ####
-write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F)
-write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F)
+write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
+            , row.names = F)
+write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F
+            , row.names = F)
+### ALSO OUTPUT ALL DGELIST ###
+write.table(x = , file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
+            , row.names = F)
+
+
 
 #### 09. Differential expression ####
 datatypes
