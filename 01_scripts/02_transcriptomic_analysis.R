@@ -177,7 +177,7 @@ for(i in 1:length(datatypes)){
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
 
-doi <- NULL
+doi <- NULL; doi.DGEList.filt.norm <- list()
 for(i in 1:length(datatypes)){
   
   # Select the datatypes
@@ -221,14 +221,24 @@ for(i in 1:length(datatypes)){
   # pch = plotting symbol or symbols. See points for possible values. Ignored if labels is non-NULL.
   # TODO: this will be adjusted once the phenotypes are brought in
   
-  }
+  # Assign the current DGElist into a list
+  doi.DGEList.filt.norm[[datatypes[i]]] <- doi
+  
+}
+
+# Output is doi.DGEList.filt.norm
+names(doi.DGEList.filt.norm)
+doi.DGEList.filt.norm$gill$samples
+doi.DGEList.filt.norm$dig$samples
+# norm factors have been added
+# here forward use doi.DGEList.filt.norm
 
 
-# #### 06. Exploratory MDS plots, remains early draft (bjgs) ####
+# #### 06. Exploratory MDS plots, remains early draft (bjgs) NEEDS CORRECTION OF OBJECT ####
 # datatypes
-# #doi <- doi.DGEList.filt[["all"]] # choose from
-# #doi <- doi.DGEList.filt[["gill"]] # choose from
-# #doi <- doi.DGEList.filt[["dig"]] # choose from
+# #doi <- doi.DGEList.filt[["all"]] # choose from ### TO UPDATE
+# #doi <- doi.DGEList.filt[["gill"]] # choose from ### TO UPDATE
+# #doi <- doi.DGEList.filt[["dig"]] # choose from ### TO UPDATE
 # 
 # # What are the samples, and in what order?
 # sample_order.df <- rownames(doi$samples)
@@ -296,8 +306,9 @@ for(i in 1:length(datatypes)){
 
 #### 07. Tissue-Specific Expression ####
 datatypes
-gill.DGEList <- doi.DGEList.filt[["gill"]]
-dig.DGEList  <- doi.DGEList.filt[["dig"]] 
+all.DGEList <- doi.DGEList.filt.norm[["all"]]
+gill.DGEList <- doi.DGEList.filt.norm[["gill"]]
+dig.DGEList  <- doi.DGEList.filt.norm[["dig"]] 
 
 # Obtain the contig names that are expressed in each DGEList
 expr_gill.vec <- rownames(gill.DGEList$counts)
@@ -331,9 +342,19 @@ write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_li
             , row.names = F)
 write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F
             , row.names = F)
-### ALSO OUTPUT ALL DGELIST ###
-write.table(x = , file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
-            , row.names = F)
+
+# Output all dgelist (may not be necessary)
+write.table(x = all.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
+             , row.names = F)
+
+
+# Heatmap of tissue-specific genes
+genes_to_retain.vec <- c(gill_specific_genes.vec, dig_specific_genes.vec)
+length(gill_specific_genes.vec) + length(dig_specific_genes.vec) == length(genes_to_retain.vec)
+length(genes_to_retain.vec)
+
+# log2 counts per million
+logcounts <- cpm(all.DGEList,log=TRUE)
 
 
 
