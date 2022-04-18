@@ -4,6 +4,8 @@
 # clear workspace
 #rm(list=ls())
 
+#### 00. Front Matter ####
+
 # Install packages and load libraries
 # if (!requireNamespace("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
@@ -14,8 +16,6 @@
 library("limma")
 library("edgeR")
 library("tidyr")
-
-#### 00. Front Matter ####
 
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -36,6 +36,7 @@ min.ind <- 5 # choose the minimum number of individuals that need to pass the th
 options(scipen = 9999999)
 
 #### 01a. Import Annotation ####
+
 # contig ID and uniprot ID
 id_and_uniprot_id.df <- read.table(file = gzfile(uniprot.FN), sep = "\t", header = F)
 colnames(id_and_uniprot_id.df) <- c("contig.id", "uniprot.id")
@@ -234,78 +235,88 @@ doi.DGEList.filt.norm$dig$samples
 # here forward use doi.DGEList.filt.norm
 
 
-# #### 06. Exploratory MDS plots, remains early draft (bjgs) NEEDS CORRECTION OF OBJECT ####
-# datatypes
-# #doi <- doi.DGEList.filt[["all"]] # choose from ### TO UPDATE
-# #doi <- doi.DGEList.filt[["gill"]] # choose from ### TO UPDATE
-# #doi <- doi.DGEList.filt[["dig"]] # choose from ### TO UPDATE
-# 
-# # What are the samples, and in what order?
-# sample_order.df <- rownames(doi$samples)
-# sample_order.df <- as.data.frame(sample_order.df)
-# colnames(sample_order.df)[1] <- "RNAseq.id"
-# sample_order.df
-# 
-# #sample_order.df$match.id <- sample_order.df$RNAseq.id
-# 
-# sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
-#                       , sep = "_P", into = c("drop", "plot_and_suffix")
-#                        #, remove = FALSE
-#                       )
-# 
-# sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
-#                             , sep = "\\.eff", into = c("plot", "suffix")
-#                             #, remove = FALSE
-# )
-# 
-# sample_order.df
-# sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
-# 
-# # Put the phenotypes dataframe into the same order as the samples in the DGEList
-# phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
-# 
+#### 06. Exploratory MDS plots
+datatypes
+doi <- doi.DGEList.filt.norm[["all"]] # choose from
+#doi <- doi.DGEList.filt.norm[["gill"]] # choose from
+#doi <- doi.DGEList.filt.norm[["dig"]] # choose from
+
+# What are the samples, and in what order?
+sample_order.df <- rownames(doi$samples)
+sample_order.df <- as.data.frame(sample_order.df)
+colnames(sample_order.df)[1] <- "RNAseq.id"
+sample_order.df
+
+# Clean up sample IDs
+sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
+                      , sep = "_P", into = c("drop", "plot_and_suffix")
+                       #, remove = FALSE
+                      )
+
+sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
+                            , sep = "\\.eff", into = c("plot", "suffix")
+                            #, remove = FALSE
+)
+
+sample_order.df
+
+# Add character to allow sample IDs to match the phenotype df
+sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
+
+# Add order of the samples
+sample_order.df$true.order <- seq(1:nrow(sample_order.df))
+
+# Put the phenotypes dataframe into the same order as the samples in the DGEList
+phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
+
+# Put back in order
+ordered_phenos.df <- phenos_for_present_samples.df[order(phenos_for_present_samples.df$true.order), ]
+
 # ordered_phenos.df <- phenos_for_present_samples.df[order(match(phenos_for_present_samples.df[,"sample.id"], sample_order.df[,"sample.id"])),]
-# head(ordered_phenos.df)
-# 
-# ordered_phenos.df$sample.id
-# sample_order.df$sample.id
-# 
-# # Selecting custom labels for MDS Plot 
-# # What do we have to choose from? 
-# colnames(ordered_phenos.df)
-# 
-# # Type, Beach, sample.id
-# custom_labels <- paste0(ordered_phenos.df$Type, "_"
-#                         , ordered_phenos.df$beach, "_"
-#                         , ordered_phenos.df$sample.id 
-#        )
-# 
+head(ordered_phenos.df)
+
+# Selecting custom labels for MDS Plot
+# What do we have to choose from?
+colnames(ordered_phenos.df)
+
+# Create ID: beach type, % survival, carbonate, [ sand ], sample ID
+
+# Type, Beach, sample.id
+custom_labels <- paste0(ordered_phenos.df$Type, "_"
+                        , ordered_phenos.df$surv, "_"
+                        , ordered_phenos.df$carb, "_"
+                        , ordered_phenos.df$beach, "_"
+                        , ordered_phenos.df$sample.id
+       )
+
 # # Survival, Beach, sample.id
 # custom_labels <- paste0(ordered_phenos.df$surv, "_"
 #                         , ordered_phenos.df$beach, "_"
-#                         , ordered_phenos.df$sample.id 
+#                         , ordered_phenos.df$sample.id
 # )
 # 
 # # Sand, silt, sample.id
 # custom_labels <- paste0(ordered_phenos.df$sand, "_"
 #                         , ordered_phenos.df$silt, "_"
-#                         , ordered_phenos.df$sample.id 
+#                         , ordered_phenos.df$sample.id
 # )
 # 
 # # Day, Carbon, sample.id
 # custom_labels <- paste0(ordered_phenos.df$day, "_"
 #                         , ordered_phenos.df$carb, "_"
-#                         , ordered_phenos.df$sample.id 
+#                         , ordered_phenos.df$sample.id
 # )
-# 
-# 
-# # Plot
-# plotMDS(x = doi, cex= 0.8, labels = custom_labels)
-# # save out as 5 x 8
+
+
+# Plot
+plotMDS(x = doi, cex= 0.8, labels = custom_labels)
+# save out as 5 x 8
 
 
 #### 07. Tissue-Specific Expression ####
 datatypes
+
+# Use easier to call objects
 all.DGEList <- doi.DGEList.filt.norm[["all"]]
 gill.DGEList <- doi.DGEList.filt.norm[["gill"]]
 dig.DGEList  <- doi.DGEList.filt.norm[["dig"]] 
@@ -336,6 +347,63 @@ write.table(x = gill_specific_annot.df, file = "04_txomic_results/tissue-specifi
 write.table(x = dig_specific_annot.df, file = "04_txomic_results/tissue-specific_genes_dig.txt", sep = "\t", quote = F
             , row.names = F)
 
+## Make plot for tissue-specific genes
+# Need to subset first, as there are too many currently to make a proper heatmap
+
+# Which genes show tissue-specific expression? 
+genes_to_retain.vec <- c(gill_specific_genes.vec, dig_specific_genes.vec)
+
+# Confirm sizes
+length(gill_specific_genes.vec) + length(dig_specific_genes.vec) == length(genes_to_retain.vec)
+length(genes_to_retain.vec)
+
+# Extract linear cpm
+to_id_top_expressed <- cpm(y = all.DGEList, log=FALSE)
+to_id_top_expressed.df <- as.data.frame(to_id_top_expressed)
+to_id_top_expressed.df[1:5,1:5]
+dim(to_id_top_expressed.df)
+
+# Keep only tissue specific
+to_id_top_expressed.df <- to_id_top_expressed.df[rownames(to_id_top_expressed.df) %in% genes_to_retain.vec, ]
+dim(to_id_top_expressed.df)
+length(genes_to_retain.vec) # a couple will be missing (diff cpm filter), can do a setdiff here as needed to see
+length(intersect(x = genes_to_retain.vec, y = rownames(to_id_top_expressed.df)))
+
+
+# Separate into tissue type
+gill_linear.df  <- to_id_top_expressed.df[, grep(pattern = "\\.CG\\_G", x = colnames(to_id_top_expressed.df))]
+dig_linear.df  <- to_id_top_expressed.df[, grep(pattern = "\\.CG\\_DG", x = colnames(to_id_top_expressed.df))]
+
+gill_linear.df$sum.counts <- rowSums(gill_linear.df)
+dig_linear.df$sum.counts <- rowSums(dig_linear.df)
+
+gill_linear.df[1:2, ]
+dig_linear.df[1:2, ]
+
+# Sort by top expressors, 200 each
+gill_linear.df <- gill_linear.df[order(gill_linear.df$sum.counts, decreasing = T), ]
+head(gill_linear.df)
+top.expr.gill.sp <- rownames(gill_linear.df)[1:200]
+
+dig_linear.df <- dig_linear.df[order(dig_linear.df$sum.counts, decreasing = T), ]
+head(dig_linear.df)
+top.expr.dig.sp <- rownames(dig_linear.df)[1:200]
+
+
+#### Get the actual data for plotting
+# Convert data to log2 CPM
+logcounts <- cpm(y = all.DGEList, log=TRUE)
+
+# Select only those that were specified to be retained
+top_genes_to_retain.vec <- c(top.expr.gill.sp, top.expr.dig.sp)
+length(top_genes_to_retain.vec)
+
+logcounts_tissue_specific <- logcounts[rownames(logcounts) %in% top_genes_to_retain.vec, ] # all retained
+dim(logcounts_tissue_specific)
+logcounts[1:5, 1:5]
+
+heatmap(x = logcounts)
+
 
 #### 08. Export background list (expressed genes) ####
 write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
@@ -346,44 +414,6 @@ write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_lis
 # Output all dgelist (may not be necessary)
 write.table(x = all.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
              , row.names = F)
-
-
-#### TODO: ####
-
-?heatmap()
-
-# Heatmap of tissue-specific genes
-genes_to_retain.vec <- c(gill_specific_genes.vec, dig_specific_genes.vec)
-length(gill_specific_genes.vec) + length(dig_specific_genes.vec) == length(genes_to_retain.vec)
-length(genes_to_retain.vec)
-
-# log2 counts per million
-logcounts <- cpm(y = all.DGEList, log=TRUE)
-
-logcounts[1:5, 1:5]
-logcounts_tissue_specific <- logcounts[rownames(logcounts) %in% genes_to_retain.vec, ]
-dim(logcounts_tissue_specific)
-
-#install.packages("RColorBrewer")
-library(RColorBrewer)
-
-mypalette <- brewer.pal(11,"RdYlBu") # 11 is the maximum of the pallet
-morecols <- colorRampPalette(mypalette)
-# Set up colour vector for celltype variable
-# col.cell <- c("purple","orange")[sampleinfo$CellType]
-
-#install.packages("gplots")
-library("gplots")
-
-# Plot the heatmap
-heatmap.2(x = logcounts, 
-          col=rev(morecols(50)),
-          trace="column", 
-          main="Tissue-specific expression",
-          ColSideColors=col.cell,scale="row")
-
-#### /END/ TODO: ####
-
 
 #### 09. Differential expression ####
 datatypes
@@ -658,18 +688,10 @@ plot(x = gois.df$surv, y = gois.df$`25356128`, las = 1)
 plot(x = gois.df$surv, y = gois.df$`25357396`, las = 1)
 plot(x = gois.df$surv, y = gois.df$`25364008`, las = 1)
 
-### DO THE OTHER TISSUE ####
+### TODO: DO THE OTHER TISSUE ####
 
 ### OLDER CODE ###
 par(mfrow=c(1,1))
 plot(x = samples_and_phenos.df$surv, y = samples_and_phenos.df$carb)
 plot(x = samples_and_phenos.df$carb, y = samples_and_phenos.df$surv)
-
-
-
-# Separate <tissue>_<plot>
-
-head(sample_order.df) # This is the order of the samples in the DGEList
-head(phenos.df)       # This is the pheno data (regardless of tissue)
-# Do not assume these are in same order
 
