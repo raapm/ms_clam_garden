@@ -83,11 +83,12 @@ p <- ggbiplot(pcobj = pca_fit, labels = row.names(beaches)
               , groups = beaches$Group, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
-p
-## optional to remove grey grid
+p # uncomment if want to keep grey grid
+
+# optional to remove grey grid
 # p <- p + theme(panel.background = element_rect(fill = "white", colour = NA) )
 # p <- p + theme(panel.grid = element_blank(), legend.position = "none")
-# p 
+# p
 dev.off()
 
 #### Remaining questions
@@ -143,8 +144,8 @@ summary(model4)
 model5 <- lm(surv ~ sand, data = clam)
 summary(model5)
 
+
 #### Questions. models ####
-# Q4. Correlation analysis of variables (done below, send)
 # Q5. How to determine the most significantly associated variable? Stepwise process of removing variables
 
 #### Correlation of variables ####
@@ -183,4 +184,20 @@ boxplot(clam$surv ~ clam$beach, las = 1
 boxplot(clam$grow ~ clam$beach, las = 1
         , xlab = "Beach", ylab = "Growth"
 )
+dev.off()
+
+# Consider survival and carbonates
+pdf(file = "03_pheno_results/survival_by_carbonate.pdf", width = 8, height = 5)
+par(mfrow=c(1,1))
+plot(x = clam$carb, y = clam$surv
+     , ylab = "Survival (%)"
+     , xlab = "Carbonate (%)"
+)
+
+mod <- lm(surv ~ carb, data = clam)
+summary(mod)
+
+results <- summary(mod)
+text(x = 13, y = 85, labels = paste0("adj. Rsq. = ", round(results$adj.r.squared, digits = 2)))
+text(x = 13, y = 75, labels = paste0("p-value: ", round(results$coefficients["carb","Pr(>|t|)"], digits = 5)))
 dev.off()
