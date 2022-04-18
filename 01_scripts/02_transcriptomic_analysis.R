@@ -330,7 +330,9 @@ for(i in 1:length(tissues.to.include)){
 #### 07. Tissue-Specific Expression ####
 datatypes
 
-# Use easier to call objects
+n.genes.per.tissue.for.heatmap <- 200
+
+# Simplify object calls
 all.DGEList <- doi.DGEList.filt.norm[["all"]]
 gill.DGEList <- doi.DGEList.filt.norm[["gill"]]
 dig.DGEList  <- doi.DGEList.filt.norm[["dig"]] 
@@ -371,7 +373,7 @@ genes_to_retain.vec <- c(gill_specific_genes.vec, dig_specific_genes.vec)
 length(gill_specific_genes.vec) + length(dig_specific_genes.vec) == length(genes_to_retain.vec)
 length(genes_to_retain.vec)
 
-# Extract linear cpm
+# Extract linear cpm for selecting the top expressed
 to_id_top_expressed <- cpm(y = all.DGEList, log=FALSE)
 to_id_top_expressed.df <- as.data.frame(to_id_top_expressed)
 to_id_top_expressed.df[1:5,1:5]
@@ -383,26 +385,42 @@ dim(to_id_top_expressed.df)
 length(genes_to_retain.vec) # a couple will be missing (diff cpm filter), can do a setdiff here as needed to see
 length(intersect(x = genes_to_retain.vec, y = rownames(to_id_top_expressed.df)))
 
-
 # Separate into tissue type
 gill_linear.df  <- to_id_top_expressed.df[, grep(pattern = "\\.CG\\_G", x = colnames(to_id_top_expressed.df))]
 dig_linear.df  <- to_id_top_expressed.df[, grep(pattern = "\\.CG\\_DG", x = colnames(to_id_top_expressed.df))]
 
+# Add up total number of reads aligned to feature
 gill_linear.df$sum.counts <- rowSums(gill_linear.df)
 dig_linear.df$sum.counts <- rowSums(dig_linear.df)
 
 gill_linear.df[1:2, ]
 dig_linear.df[1:2, ]
 
-# Sort by top expressors, 200 each
+# Sort by top expressors, use variable set above
 gill_linear.df <- gill_linear.df[order(gill_linear.df$sum.counts, decreasing = T), ]
 head(gill_linear.df)
-top.expr.gill.sp <- rownames(gill_linear.df)[1:200]
+top.expr.gill.sp <- rownames(gill_linear.df)[1:n.genes.per.tissue.for.heatmap]
 
 dig_linear.df <- dig_linear.df[order(dig_linear.df$sum.counts, decreasing = T), ]
 head(dig_linear.df)
-top.expr.dig.sp <- rownames(dig_linear.df)[1:200]
+top.expr.dig.sp <- rownames(dig_linear.df)[1:n.genes.per.tissue.for.heatmap]
 
+# Technically I should be able to use these top.expr.dig.sp in the order they are in now
+top.expr.gill.sp.df <- as.data.frame(x = top.expr.gill.sp)
+colnames(top.expr.gill.sp.df)[1] <- "contig.id"
+#top.expr.gill.sp.df$true.order <- seq(1:nrow(top.expr.gill.sp.df))
+head(top.expr.gill.sp.df)
+
+top.expr.dig.sp.df <- as.data.frame(x = top.expr.dig.sp)
+colnames(top.expr.dig.sp.df)[1] <- "contig.id"
+#top.expr.dig.sp.df$true.order <- seq(1:nrow(top.expr.dig.sp.df))
+head(top.expr.dig.sp.df)
+
+# Plotting order
+plotting_order.df <- rbind(top.expr.gill.sp.df, top.expr.dig.sp.df)
+plotting_order.df$true.order <- seq(1:nrow(plotting_order.df))
+head(plotting_order.df)
+tail(plotting_order.df)
 
 #### Get the actual data for plotting
 # Convert data to log2 CPM
@@ -414,9 +432,37 @@ length(top_genes_to_retain.vec)
 
 logcounts_tissue_specific <- logcounts[rownames(logcounts) %in% top_genes_to_retain.vec, ] # all retained
 dim(logcounts_tissue_specific)
-logcounts[1:5, 1:5]
+logcounts_tissue_specific[1:5, 1:5]
 
-heatmap(x = logcounts)
+logcounts_tissue_specific.df <- as.data.frame(logcounts_tissue_specific)
+#head(logcounts_tissue_specific.df)
+logcounts_tissue_specific.df$contig.id <- rownames(logcounts_tissue_specific.df)
+head(logcounts_tissue_specific.df)
+
+logcounts_tissue_specific.df <- merge(x = logcounts_tissue_specific.df, y = plotting_order.df, by = "contig.id")
+head(logcounts_tissue_specific.df) # Lost rownames, add back from contig.id
+rownames(logcounts_tissue_specific.df) <- logcounts_tissue_specific.df$contig.id
+head(logcounts_tissue_specific.df) # Got them back
+
+logcounts_tissue_specific.df <- logcounts_tissue_specific.df[order(logcounts_tissue_specific.df$true.order), ]
+logcounts_tissue_specific.df$true.order
+logcounts_tissue_specific.df<- logcounts_tissue_specific.df[, grep(pattern = "contig.id|true.order", x = colnames(logcounts_tissue_specific.df), invert = T)]
+
+colnames(logcounts_tissue_specific.df) <- gsub(pattern = "\\.eff.*", replacement = ""
+     , x = gsub(pattern = ".*\\.CG\\_", replacement = "", x = colnames(logcounts_tissue_specific.df))
+          )
+
+logcounts_tissue_specific.df <- as.matrix(x = logcounts_tissue_specific.df)
+
+# test <- head(logcounts_tissue_specific.df, n = 20)
+# test <- as.matrix(test)
+
+pdf(file = "04_txomic_results/tissue_specific_heatmap.pdf", width = "6", height = 6)
+heatmap(x = logcounts_tissue_specific.df
+        , Rowv = NA
+        , labRow = NA # Removes contig ids
+        ) # Red is expression
+dev.off()
 
 
 #### 08. Export background list (expressed genes) ####
@@ -428,6 +474,7 @@ write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_lis
 # Output all dgelist (may not be necessary)
 write.table(x = all.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
              , row.names = F)
+
 
 #### 09. Differential expression ####
 datatypes
