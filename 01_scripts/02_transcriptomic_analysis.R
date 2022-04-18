@@ -176,7 +176,7 @@ for(i in 1:length(datatypes)){
 
 # View summary
 doi.summary
-
+capture.output(doi.summary, file = "04_txomic_results/DGEList_summaries.txt")
 
 #### 5. Normalization and Data Visualization ####
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
