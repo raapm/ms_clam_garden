@@ -835,9 +835,3 @@ plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25385377`, l
 )
 dev.off()
 
-
-### OLDER CODE ###
-par(mfrow=c(1,1))
-plot(x = samples_and_phenos.df$surv, y = samples_and_phenos.df$carb)
-plot(x = samples_and_phenos.df$carb, y = samples_and_phenos.df$surv)
-
