@@ -705,51 +705,136 @@ for(i in 1:length(names(lists_of_interest))){
   
 }
 
+#### 10. Gene Of Interest plotting ####
+### Clam garden consistent DEGs
+lists_of_interest[["gill"]]$samples # the filtered, normalized data used for DE analysis
+names(lists_of_interest)
 
-##### Assorted GOI plotting
-### CLAM GARDEN BOXPLOT ###
-temp <- cpm(y = dig.DGEList, normalized.lib.sizes = T)
-dim(temp)
-colnames(temp)
+# Genes to plot: 
+goi.list <- list(); gois_prepared.list <- list()
+goi.list[["CG"]] <- c("25388346", "25389949")
+goi.list[["dig_surv"]] <- c("25356128", "25357396", "25364008")
+goi.list[["gill_surv"]] <- c("25371088", "25357391", "25385377")
 
-temp <- t(temp)
-dim(temp)
-rownames(temp)
-colnames(temp)[1:5]
-gois <- temp[, c("25388346", "25389949", "25356128", "25357396", "25364008")] # For Clam garden variable
+cpm.data <- NULL; cg.gois <- NULL; surv.gois <- NULL; gois <- NULL; tissue.of.interest <- NULL; DGE.data <- NULL
+for(i in 1:length(names(lists_of_interest))){
+  
+  # Tissue this round
+  tissue.of.interest <- names(lists_of_interest)[i]
+  
+  # Obtain the DGEList of interest
+  DGE.data <- lists_of_interest[[tissue.of.interest]]
+  
+  # obtain log2 cpm
+  cpm.data <- cpm(y = DGE.data, normalized.lib.sizes = T, log = TRUE)
+  
+  # rows = transcripts; cols = samples
+  dim(cpm.data)
+  colnames(cpm.data) # samples
+  
+  # Transpose for plotting purposes
+  cpm.data <- t(cpm.data)
+  dim(cpm.data)
+  rownames(cpm.data)
+  colnames(cpm.data)[1:5]
+  
+  # Which GOIs for this tissue? 
+  cg.gois <- goi.list[["CG"]]
+  surv.gois <- goi.list[[ paste0(names(lists_of_interest)[i],"_surv") ]] # Survival genes
+  
+  # Obtain the cpm data for only the GOIs
+  gois <- cpm.data[, c(cg.gois          # clam garden
+                       , surv.gois      # survival 
+                       )] 
+  
+  gois.df <- as.data.frame(gois)
+  
+  # Obtain matching character from the rownames for upcoming phenotype merge
+  gois.df$sample <- rownames(gois.df)
+  gois.df$sample <- gsub(pattern = ".eff.counts", replacement = "", x = gois.df$sample)
+  gois.df <- separate(data = gois.df, col = "sample", into = c("prefix", "plot_and_suffix")
+                      , sep = "CG_", remove = T)
+  gois.df <- separate(data = gois.df, col = "plot_and_suffix", into = c("tissue", "plot")
+                      , sep = "_", remove = T
+  )
+  
+  
+  head(gois.df)
+  
+  # Merge with phenotypes
+  gois.df <- merge(x = gois.df, y = samples_and_phenos.df, by = "plot")
+  head(gois.df)
+  
+  # TODO: although it doesn't technically matter, here we don't technically use tissue-specific pheno data, should be ok
+  
+  
+  gois_prepared.list[[names(lists_of_interest)[i]]] <- gois.df
+  
+}
 
-rownames(temp)
 
-gois.df <- as.data.frame(gois)
+# Plotting
+# Obtain data from: gois_prepared.list
 
-gois.df$sample <- rownames(gois.df)
-gois.df$sample <- gsub(pattern = ".eff.counts", replacement = "", x = gois.df$sample)
-gois.df <- separate(data = gois.df, col = "sample", into = c("prefix", "plot_and_suffix")
-         , sep = "CG_", remove = T)
-gois.df <- separate(data = gois.df, col = "plot_and_suffix", into = c("tissue", "plot")
-                            , sep = "_", remove = T
+gois_prepared.list[["dig"]]$Type <- factor(x = gois_prepared.list[["dig"]]$Type, levels = c("Ref", "CG"))
+gois_prepared.list[["gill"]]$Type <- factor(x = gois_prepared.list[["gill"]]$Type, levels = c("Ref", "CG"))
+
+# Clam garden plot, consistent GOIs: 
+pdf(file = "04_txomic_results/GOI_clam_garden.pdf", width = 7, height = 5)
+par(mfrow=c(2,2), mar= c(3,3,3,1) + 0.2, mgp = c(2,0.75,0))
+boxplot(gois_prepared.list$dig$`25388346` ~ gois_prepared.list$dig$Type, las = 1
+        , ylab = "log2 cpm(vwd), digestive gland", xlab = "Beach Type")
+
+boxplot(gois_prepared.list$gill$`25388346` ~ gois_prepared.list$gill$Type, las = 1
+        , ylab = "log2 cpm(vwd), gill", xlab = "Beach Type")
+
+boxplot(gois_prepared.list$dig$`25389949` ~ gois_prepared.list$dig$Type, las = 1
+        , ylab = "log2 cpm(pear1), digestive gland", xlab = "Beach Type")
+
+boxplot(gois_prepared.list$gill$`25389949` ~ gois_prepared.list$gill$Type, las = 1
+        , ylab = "log2 cpm(pear1), gill", xlab = "Beach Type")
+dev.off()
+
+
+# Survival plot, tissue-specific GOIs
+pdf(file = "04_txomic_results/GOI_expr_survival.pdf", width = 9, height = 5)
+par(mfrow=c(2,3)
+    , mar= c(3,3,3,1) + 0.2
+    , mgp = c(2,0.75,0)
+    )
+# Dig
+plot(x = gois_prepared.list$dig$surv, y = gois_prepared.list$dig$`25356128`, las = 1
+     , xlab = "Survival (%)"
+     , ylab = "log2 cpm( hsp70-12a ), Dig."
+     )
+
+plot(x = gois_prepared.list$dig$surv, y = gois_prepared.list$dig$`25357396`, las = 1
+     , xlab = "Survival (%)"
+     , ylab = "log2 cpm( aminopeptidase ), Dig."
 )
 
+plot(x = gois_prepared.list$dig$surv, y = gois_prepared.list$dig$`25364008`, las = 1
+     , xlab = "Survival (%)"
+     , ylab = "log2 cpm( mucin-2 ), Dig."
+)
 
-head(gois.df)
+# Gill
+plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25371088`, las = 1
+     , xlab = "Survival (%)"
+     , ylab = "log2 cpm( hsp70-12a ), Gill"
+)
 
-gois.df <- merge(x = gois.df, y = samples_and_phenos.df, by = "plot")
-head(gois.df)
+plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25357391`, las = 1
+     , xlab = "Survival (%)"
+     , ylab = "log2 cpm( hsp90 ), Gill"
+)
 
-par(mfrow=c(1,2))
-boxplot(gois.df$`25388346` ~ gois.df$Type, las = 1
-        , ylab = "linear cpm(25388346)", xlab = "Beach Type")
+plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25385377`, las = 1
+     , xlab = "Survival (%)"
+     , ylab = "log2 cpm( toll-like-rec. 1 ), Gill"
+)
+dev.off()
 
-boxplot(gois.df$`25389949` ~ gois.df$Type, las = 1
-        , ylab = "linear cpm(25389949)", xlab = "Beach Type")
-
-#### SURVIVAL 
-par(mfrow=c(1,3))
-plot(x = gois.df$surv, y = gois.df$`25356128`, las = 1)
-plot(x = gois.df$surv, y = gois.df$`25357396`, las = 1)
-plot(x = gois.df$surv, y = gois.df$`25364008`, las = 1)
-
-### TODO: DO THE OTHER TISSUE ####
 
 ### OLDER CODE ###
 par(mfrow=c(1,1))
