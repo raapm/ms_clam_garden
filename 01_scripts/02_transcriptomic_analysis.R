@@ -253,79 +253,78 @@ dev.off()
 
 
 # Plot each tissue with specified variables of interest
-#doi <- doi.DGEList.filt.norm[["gill"]] # choose from
-doi <- doi.DGEList.filt.norm[["dig"]] # choose from
+#par(mfrow=c(1,1))
 
-# What are the samples, and in what order?
-sample_order.df <- rownames(doi$samples)
-sample_order.df <- as.data.frame(sample_order.df)
-colnames(sample_order.df)[1] <- "RNAseq.id"
-sample_order.df
-
-# Clean up sample IDs
-sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
-                      , sep = "_P", into = c("drop", "plot_and_suffix")
-                       #, remove = FALSE
-                      )
-
-sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
-                            , sep = "\\.eff", into = c("plot", "suffix")
-                            #, remove = FALSE
-)
-
-sample_order.df
-
-# Add character to allow sample IDs to match the phenotype df
-sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
-
-# Add order of the samples
-sample_order.df$true.order <- seq(1:nrow(sample_order.df))
-
-# Put the phenotypes dataframe into the same order as the samples in the DGEList
-phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
-
-# Put back in order
-ordered_phenos.df <- phenos_for_present_samples.df[order(phenos_for_present_samples.df$true.order), ]
-
-# ordered_phenos.df <- phenos_for_present_samples.df[order(match(phenos_for_present_samples.df[,"sample.id"], sample_order.df[,"sample.id"])),]
-head(ordered_phenos.df)
-
-# Selecting custom labels for MDS Plot
-# What do we have to choose from?
-colnames(ordered_phenos.df)
-
-# Create ID: beach type, % survival, carbonate, [ sand ], sample ID
-
-# Type, Beach, sample.id
-custom_labels <- paste0(ordered_phenos.df$Type, "_"
-                        , ordered_phenos.df$surv, "_"
-                        , ordered_phenos.df$carb, "_"
-                        , ordered_phenos.df$beach, "_"
-                        , ordered_phenos.df$sample.id
-       )
-
-# # Survival, Beach, sample.id
-# custom_labels <- paste0(ordered_phenos.df$surv, "_"
-#                         , ordered_phenos.df$beach, "_"
-#                         , ordered_phenos.df$sample.id
-# )
-# 
-# # Sand, silt, sample.id
-# custom_labels <- paste0(ordered_phenos.df$sand, "_"
-#                         , ordered_phenos.df$silt, "_"
-#                         , ordered_phenos.df$sample.id
-# )
-# 
-# # Day, Carbon, sample.id
-# custom_labels <- paste0(ordered_phenos.df$day, "_"
-#                         , ordered_phenos.df$carb, "_"
-#                         , ordered_phenos.df$sample.id
-# )
-
-
-# Plot
-plotMDS(x = doi, cex= 0.8, labels = custom_labels)
-# save out as 5 x 8
+tissues.to.include <- c("gill", "dig")
+phenos_for_present_samples.df <- NULL;  ordered_phenos.df <- NULL
+for(i in 1:length(tissues.to.include)){
+  
+  pdf(file = paste0("04_txomic_results/" 
+                    , tissues.to.include[i]
+                    , "_samples_mds_dim_1_2.pdf"), width = 11.3, height = 5.2)
+  
+  
+  # Reporting
+  print(paste0("Plotting ", tissues.to.include[i]))
+  
+  # Choose the tissue DGEList
+  doi <- doi.DGEList.filt.norm[[tissues.to.include[i]]] # choose from 
+  
+  # What are the samples, and in what order?
+  sample_order.df <- rownames(doi$samples)
+  sample_order.df <- as.data.frame(sample_order.df)
+  colnames(sample_order.df)[1] <- "RNAseq.id"
+  sample_order.df
+  
+  # Clean up sample IDs
+  sample_order.df <- separate(data = sample_order.df, col = "RNAseq.id"
+                              , sep = "_P", into = c("drop", "plot_and_suffix")
+                              #, remove = FALSE
+  )
+  
+  sample_order.df <- separate(data = sample_order.df, col = "plot_and_suffix"
+                              , sep = "\\.eff", into = c("plot", "suffix")
+                              #, remove = FALSE
+  )
+  
+  sample_order.df
+  
+  # Add character to allow sample IDs to match the phenotype df
+  sample_order.df$sample.id <- paste0("P", sample_order.df$plot)
+  
+  # Add order of the samples
+  sample_order.df$true.order <- seq(1:nrow(sample_order.df))
+  
+  # Merge the samples (including order) with the phenotypes dataframe
+  phenos_for_present_samples.df <- merge(x = sample_order.df, y = phenos.df, by = "sample.id")
+  
+  # Put back in the order that exists in the DGEList
+  ordered_phenos.df <- phenos_for_present_samples.df[order(phenos_for_present_samples.df$true.order), ]
+  
+  # ordered_phenos.df <- phenos_for_present_samples.df[order(match(phenos_for_present_samples.df[,"sample.id"], sample_order.df[,"sample.id"])),]
+  head(ordered_phenos.df)
+  
+  # Selecting custom labels for MDS Plot
+  # What do we have to choose from?
+  #colnames(ordered_phenos.df)
+  
+  # Create ID for plot: beach type, % survival, carbonate, [ sand ], sample ID
+  
+  # Type, survival percent, carbonate percent, Beach, sample.id
+  custom_labels <- paste0(ordered_phenos.df$Type, "_"
+                          , ordered_phenos.df$surv, "_"
+                          , ordered_phenos.df$carb, "_"
+                          , ordered_phenos.df$beach, "_"
+                          , ordered_phenos.df$sample.id
+  )
+  
+  # Plot
+  plotMDS(x = doi, cex= 0.8, labels = custom_labels
+          #, main = tissues.to.include[i]
+          )
+  dev.off()
+  
+}
 
 
 #### 07. Tissue-Specific Expression ####
