@@ -4,8 +4,8 @@
 # clear workspace
 #rm(list=ls())
 
-#### 00. Front Matter ####
 
+#### 00. Front Matter ####
 # Install packages and load libraries
 # if (!requireNamespace("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
@@ -35,8 +35,8 @@ min.ind <- 5 # choose the minimum number of individuals that need to pass the th
 ## Plotting options
 options(scipen = 9999999)
 
-#### 01a. Import Annotation ####
 
+#### 01a. Import Annotation ####
 # contig ID and uniprot ID
 id_and_uniprot_id.df <- read.table(file = gzfile(uniprot.FN), sep = "\t", header = F)
 colnames(id_and_uniprot_id.df) <- c("contig.id", "uniprot.id")
@@ -67,7 +67,7 @@ head(phenos.df)
 
 #### 02. Import count data ####
 # Import counts file (i.e. the final output from Simple_reads_to_counts repo)
-my.counts <- read.csv(file = "02_input_data/out.matrix.csv")
+my.counts <- read.csv(file = input.FN)
 my.counts[1:5,1:5] # note that here the identifier is referred to as 'transcript.id', but is the same as 'contig.id' above
 
 # Set first column as rownames
@@ -91,9 +91,9 @@ my.counts[1:5,1:5]
 # Finalize dataframe formats
 my.counts.round <- my.counts # Use variable as per rest of script
 head(my.counts.round)
-str(my.counts.round) # Sample info should be numeric (NOTE: #TODO: This was due to using 'round' on the full dataset above)
+str(my.counts.round) # transcript.id needs to be made into a character (NOTE: it is numeric due to using 'round' on the full dataset above)
 my.counts.round$transcript.id <- as.character(my.counts.round$transcript.id)
-head(my.counts.round)
+str(my.counts.round)
 my.counts.round[1:5,1:5]
 
 
@@ -136,16 +136,17 @@ datatypes
 doi <- NULL; doi.summary <- list(); cpm.filt <- NULL; keep <- NULL; doi.DGEList.filt <- list()
 for(i in 1:length(datatypes)){
   
-  # Select the datatypes
+  # Select the datatype
   doi <- input_dataframes.list[[datatypes[i]]]
   
-  # create DGElist, with both counts and genes
+  # Create DGElist, with both counts and genes
   doi.DGEList <- DGEList(counts = doi[, grep(pattern = "eff.counts", x = colnames(doi))]
                          , genes = doi[, grep(pattern = "eff.counts", x = colnames(doi), invert = T)]
                          )
   
   # How many columns of annotation info? 
   dim(doi.DGEList$genes)
+  colnames(doi.DGEList$genes)
   
   # Statistics on library sizes
   doi.summary[[paste0(datatypes[[i]], "_align_summary")]]    <- summary(doi.DGEList$samples$lib.size)
@@ -173,6 +174,9 @@ for(i in 1:length(datatypes)){
   
 }
 
+# View summary
+doi.summary
+
 
 #### 5. Normalization and Data Visualization ####
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
@@ -199,7 +203,7 @@ for(i in 1:length(datatypes)){
   dev.off()
   
   # Estimate dispersions (measure inter-library variation per tag)
-  doi <- estimateDisp(doi) # note that this can use a design matrix when provided 
+  doi <- estimateDisp(doi) # note that this can use a design matrix when provided, note: here we are not looking at any specific variable, leave group all as '1'
   doi$prior.df # est. overall var. across genome for dataset
   doi.summary[[paste0(datatypes[[i]], "_overall_var")]] <- doi$prior.df
   
@@ -217,11 +221,6 @@ for(i in 1:length(datatypes)){
   plotMDS(x = doi, cex= 0.8) # note that this is supposed to be run on whatever you wrote calcNormFact() to
   dev.off()
   
-  # MDS plotting options to work with:
-  # labels = character vector of sample names or labels. Defaults to colnames(x).
-  # pch = plotting symbol or symbols. See points for possible values. Ignored if labels is non-NULL.
-  # TODO: this will be adjusted once the phenotypes are brought in
-  
   # Assign the current DGElist into a list
   doi.DGEList.filt.norm[[datatypes[i]]] <- doi
   
@@ -232,14 +231,30 @@ names(doi.DGEList.filt.norm)
 doi.DGEList.filt.norm$gill$samples
 doi.DGEList.filt.norm$dig$samples
 # norm factors have been added
-# here forward use doi.DGEList.filt.norm
+# Here forward use doi.DGEList.filt.norm
 
 
-#### 06. Exploratory MDS plots
+#### 06. MDS plots
 datatypes
-doi <- doi.DGEList.filt.norm[["all"]] # choose from
+
+# Plot all samples (both tissues) with concise labels
+doi <- doi.DGEList.filt.norm[["all"]]
+
+# MDS plot
+# Note: run on whatever you wrote calcNormFact() to
+pdf(file = paste0("04_txomic_results/all_samples_mds_dim_1_2.pdf"), width = 8, height = 6)
+plotMDS(x = doi
+        , labels = 
+          gsub(pattern = "\\.eff.*", replacement = ""
+               , x = gsub(pattern = ".*\\.CG\\_", replacement = "", x = colnames(doi$counts))
+          )
+        , cex= 1) 
+dev.off()
+
+
+# Plot each tissue with specified variables of interest
 #doi <- doi.DGEList.filt.norm[["gill"]] # choose from
-#doi <- doi.DGEList.filt.norm[["dig"]] # choose from
+doi <- doi.DGEList.filt.norm[["dig"]] # choose from
 
 # What are the samples, and in what order?
 sample_order.df <- rownames(doi$samples)
