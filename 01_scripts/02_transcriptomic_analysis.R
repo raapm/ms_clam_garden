@@ -4,7 +4,6 @@
 # clear workspace
 #rm(list=ls())
 
-
 #### 00. Front Matter ####
 # Install packages and load libraries
 # if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -178,6 +177,7 @@ for(i in 1:length(datatypes)){
 doi.summary
 capture.output(doi.summary, file = "04_txomic_results/DGEList_summaries.txt")
 
+
 #### 5. Normalization and Data Visualization ####
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
@@ -228,6 +228,7 @@ for(i in 1:length(datatypes)){
 
 # Output is doi.DGEList.filt.norm
 names(doi.DGEList.filt.norm)
+doi.DGEList.filt.norm$all$samples
 doi.DGEList.filt.norm$gill$samples
 doi.DGEList.filt.norm$dig$samples
 # norm factors have been added
@@ -444,6 +445,7 @@ head(logcounts_tissue_specific.df) # Lost rownames, add back from contig.id
 rownames(logcounts_tissue_specific.df) <- logcounts_tissue_specific.df$contig.id
 head(logcounts_tissue_specific.df) # Got them back
 
+# Order by top expression
 logcounts_tissue_specific.df <- logcounts_tissue_specific.df[order(logcounts_tissue_specific.df$true.order), ]
 logcounts_tissue_specific.df$true.order
 logcounts_tissue_specific.df<- logcounts_tissue_specific.df[, grep(pattern = "contig.id|true.order", x = colnames(logcounts_tissue_specific.df), invert = T)]
@@ -471,9 +473,9 @@ write.table(x = gill.DGEList$genes, file = "04_txomic_results/background_gene_li
 write.table(x = dig.DGEList$genes, file = "04_txomic_results/background_gene_list_dig.txt", sep = "\t", quote = F
             , row.names = F)
 
-# Output all dgelist (may not be necessary)
-write.table(x = all.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
-             , row.names = F)
+# # Output all dgelist (may not be necessary)
+# write.table(x = all.DGEList$genes, file = "04_txomic_results/background_gene_list_gill.txt", sep = "\t", quote = F
+#              , row.names = F)
 
 
 #### 09. Differential expression ####
@@ -517,7 +519,7 @@ length(phenos.df[, explan_variable])  # How many samples?
 summary(phenos.df[, explan_variable]) # What are the characteristics of this variable? 
 # Replace this with the summary of the actual retained samples
 
-# How many samples in each bin? 
+# How many samples in each bin? (note: the values below are based on quartiles for only the retained beaches)
 table(phenos.df[, explan_variable] <= 62.5)
 table(phenos.df[, explan_variable] > 62.5 & phenos.df[, explan_variable] < 90)
 table(phenos.df[, explan_variable] >= 90)
@@ -766,7 +768,6 @@ for(i in 1:length(names(lists_of_interest))){
   head(gois.df)
   
   # TODO: although it doesn't technically matter, here we don't technically use tissue-specific pheno data, should be ok
-  
   
   gois_prepared.list[[names(lists_of_interest)[i]]] <- gois.df
   
