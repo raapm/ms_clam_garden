@@ -173,9 +173,6 @@ for(i in 1:length(datatypes)){
   
 }
 
-# View summary
-doi.summary
-capture.output(doi.summary, file = "04_txomic_results/DGEList_summaries.txt")
 
 
 #### 5. Normalization and Data Visualization ####
@@ -836,3 +833,7 @@ plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25385377`, l
 )
 dev.off()
 
+
+#### Export doi.summary
+doi.summary
+capture.output(doi.summary, file = "04_txomic_results/DGEList_summaries.txt")
