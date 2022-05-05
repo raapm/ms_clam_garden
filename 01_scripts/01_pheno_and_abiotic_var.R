@@ -33,7 +33,8 @@ current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.pa
 setwd(current.path)
 
 # Set input filenames
-input.FN <- "02_input_data/cgsedimentPCA.csv" # the original input filename
+#input.FN <- "02_input_data/cgsedimentPCA.csv" # the original input filename
+input.FN <- "02_input_data/cgsedimentPCA_from_Monique_2022-04-27.csv" # new, with initial weight/ height data
 input_AOV.FN <- "02_input_data/clam.csv"      # the original input filename
 
 # Load data
@@ -201,3 +202,71 @@ results <- summary(mod)
 text(x = 13, y = 85, labels = paste0("adj. Rsq. = ", round(results$adj.r.squared, digits = 2)))
 text(x = 13, y = 75, labels = paste0("p-value: ", round(results$coefficients["carb","Pr(>|t|)"], digits = 5)))
 dev.off()
+
+##### New information ####
+plot(x = clam$inwt, y = clam$surv)
+mod.inwt.surv <- lm(formula = clam$inwt ~ clam$surv)
+mod.surv.inwt <- lm(formula = clam$surv ~ clam$inwt)
+summary(mod.inwt.surv)
+summary(mod.surv.inwt)
+
+# Carbonate? 
+plot(x = clam$inwt, y = clam$carb)
+plot(y = clam$inwt, x = clam$carb)
+mod1 <- lm(formula = clam$carb ~ clam$inwt)
+summary(mod1)
+
+mod.surv.carb <- lm(formula = clam$surv ~ clam$carb)
+summary(mod.surv.carb)
+
+boxplot(clam$surv ~ clam$beach)
+boxplot(clam$inwt ~ clam$beach)
+
+mod.surv.carb.inwt <- lm(formula = clam$surv ~ clam$carb + clam$inwt)
+summary(mod.surv.carb.inwt)
+
+par(mfrow=c(2,2))
+plot(x = clam$carb, y = clam$surv)
+plot(x = clam$inwt, y = clam$surv)
+plot(x = clam$inwt, y = clam$carb)
+plot(x = clam$carb, y = clam$grow)
+mod.grow.by.carb <- lm(formula = clam$grow ~ clam$carb)
+summary(mod.grow.by.carb)
+
+
+plot(x = clam$inwt, y = clam$grow)
+
+mod.grow.by.inwt <- lm(formula = clam$grow ~ clam$inwt)
+summary(mod.grow.by.inwt)
+
+
+plot(x = clam$grow, y = clam$surv)
+#plot(y = clam$grow, x = clam$surv)
+mod.grow.by.surv <- lm(formula = clam$grow ~ clam$surv)
+summary(mod.grow.by.surv)
+
+#### Split beaches by weight group ####
+par(mfrow = c(1,2))
+plot(x = clam$carb[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
+      , y = clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
+      , xlab = "carb (low weight beaches)"
+       , ylab = "survivorship")
+
+mod <- lm(formula = clam$carb[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
+          ~ clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
+          )
+summary(mod)
+
+plot(x = clam$carb[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
+     , y = clam$surv[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
+     , xlab = "carb (high weight beaches)"
+     , ylab = "survivorship")
+
+mod <- lm(formula = clam$carb[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
+          ~ clam$surv[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
+)
+summary(mod)
+
+par(mfrow = c(1,1))
+plot(y = clam$carb, x = clam$surv)
+
