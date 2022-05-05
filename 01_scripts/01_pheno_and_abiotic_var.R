@@ -55,26 +55,8 @@ pca_fit <- beaches %>%
 
 summary(pca_fit)
 
-# # Plot PCA
-# P <- pca_fit %>%
-#   augment(beaches) %>%                              # ?
-#   rename_at(vars(starts_with(".fitted")),           # renames the PCA .fitted variables as .fittedPC1 -> PC1
-#             list(~str_replace(.,".fitted",""))) %>% # ?
-#   ggplot(aes(x=PC1, 
-#              y=PC2, 
-#              ))+
-#   geom_point()
-# P <- P + theme(panel.background = element_rect(fill = "white", colour = "black"))
-# P <- P + theme(panel.grid = element_blank())
-# P
-
 # Plot biplot
 str(beaches$Group) 
-
-### Not clear if this is required ###
-#beaches.groups <- c("A1","A2","A3","B1","B2","B3"),c("C1", "C2","C3","D1","D2","D3")
- #                   ,c("E1","E2","E3","F1","F2","F3")
-### /END/ Not clear if this is required ###
 
 # Plot PCA (ggplot)
 pdf(file = "03_pheno_results/per_plot_abiotic_PCA.pdf", width = 6, height = 6)
@@ -91,11 +73,6 @@ p # uncomment if want to keep grey grid
 # p <- p + theme(panel.grid = element_blank(), legend.position = "none")
 # p
 dev.off()
-
-#### Remaining questions
-# Q1: what is 'X' column? It is highly correlated with growth
-# Q2: what are the 'Groups' ? Is there anything that defines this other than the PCA itself? 
-# Q3: can we use the same data input as the other scripts? only one data input from raw data
 
 
 #### 02. Statistical analysis ####
