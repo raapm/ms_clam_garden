@@ -79,30 +79,45 @@ dev.off()
 # Input data (TODO: should use the same file for both PCA and AOV)
 clam <- read.csv(file = input_AOV.FN)
 head(clam) # this eventually will be replaced by the same input file as above
-str(clam)
+#str(clam)
+
+# Remove unneeded cols
+drop_cols <- c("cage", "beach_label", "orig")
+clam <- clam[, !(colnames(clam) %in% drop_cols)]
+rm(drop_cols) # clean enviro
+head(clam) # this eventually will be replaced by the same input file as above
+
 
 #### 02.1 Abiotic variable effect on growth and survival ####
-# Add all variables here # (#TODO#, need to update Table S4)
-#### TODO: do linear models for both survival and growth below ####
-# Effect of carbon on survival, linear model
-model1 <- lm(surv ~ carb, data = clam)
-summary(model1)
+# Linear models of all variables on survival and growth
 
-# Effect of organics on survival, linear model
-model2 <- lm(surv ~ org, data = clam)
-summary(model2)
+# Which columns are to be focused on as putative explanatory variables? 
+non_explan_cols <- c("beach", "grow", "surv")
 
-# Effect of srocks on survival
-model3<- lm(surv ~ srocks, data = clam)
-summary(model3)
+explan_vars <- colnames(
+                         clam[, !(colnames(clam) %in% non_explan_cols)]
+                        )
+rm(non_explan_cols) # clean enviro
 
-# Effect of silt on survival
-model4 <- lm(surv ~ silt, data = clam)
-summary(model4)
+# Set nulls, Loop
+abiotic_fx.list <- list(); voi <- NULL
 
-# Effect of sand on survival
-model5 <- lm(surv ~ sand, data = clam)
-summary(model5)
+for(i in 1:length(explan_vars)){
+  
+  voi <- explan_vars[i]
+  
+  # Linear model per explan variable, survival
+  abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]] <- lm(clam[, "surv"] ~ clam[, voi])
+  abiotic_fx.list[[paste0("surv_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0(voi, "surv.mod")]])
+  
+  # Linear model per explan variable, growth
+  abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]] <- lm(clam[, "grow"] ~ clam[, voi])
+  abiotic_fx.list[[paste0("grow_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0(voi, "grow.mod")]])
+  
+}
+
+# Then write out the output
+capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models.txt")
 
 
 #### Original analysis of Growth by Sediment ####
