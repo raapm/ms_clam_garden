@@ -81,36 +81,18 @@ clam <- read.csv(file = input_AOV.FN)
 head(clam) # this eventually will be replaced by the same input file as above
 str(clam)
 
-#### Nested ANOVA with mixed-effects model (nlme) ####
-# Since type (CG or Ref) is read in as a character variable, convert it to factor
-#clam$Type = as.factor(clam$Type)
-
-# Since beach () is read in as a character variable, convert it to factor
-clam$beach = as.factor(clam$beach)
-
-#model = lme(surv ~ org, random = ~ 1|beach, data = clam)
-#
-#summary(model)
-#anova.lme(model, type = "sequential", adjustSigma = FALSE)
-# without beach as random factor
-
-# Effect of carbon on survival
-model1 <- aov(surv ~ carb, data = clam)
+#### Survival by abiotic variables ####
+# Add all variables here # (#TODO#, need to update Table S4)
+#### TODO: do linear models for both survival and growth below ####
+# Effect of carbon on survival, linear model
+model1 <- lm(surv ~ carb, data = clam)
 summary(model1)
 
-# Effect of carbon on survival, linear model
-modelm <- lm(surv ~ carb, data = clam)
-summary(modelm)
-
-# Effect of organics on survival, AOV
-model2 <- aov(surv ~ org, data = clam)
+# Effect of organics on survival, linear model
+model2 <- lm(surv ~ org, data = clam)
 summary(model2)
 
-# Effect of organics on survival, linear model
-model2m <- lm(surv ~ org, data = clam)
-summary(model2m)
-
-# Effect of 'srocks' on survival
+# Effect of srocks on survival
 model3<- lm(surv ~ srocks, data = clam)
 summary(model3)
 
@@ -122,9 +104,6 @@ summary(model4)
 model5 <- lm(surv ~ sand, data = clam)
 summary(model5)
 
-
-#### Questions. models ####
-# Q5. How to determine the most significantly associated variable? Stepwise process of removing variables
 
 #### Correlation of variables ####
 #install.packages("corrplot")
