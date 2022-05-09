@@ -75,13 +75,13 @@ p # uncomment if want to keep grey grid
 dev.off()
 
 
-#### 02. Statistical analysis ####
-# Input data (to update: should use the same file for both PCA and AOV)
+#### 02. Statistical analysis, explanatory variable models ####
+# Input data (TODO: should use the same file for both PCA and AOV)
 clam <- read.csv(file = input_AOV.FN)
 head(clam) # this eventually will be replaced by the same input file as above
 str(clam)
 
-#### Survival by abiotic variables ####
+#### 02.1 Abiotic variable effect on growth and survival ####
 # Add all variables here # (#TODO#, need to update Table S4)
 #### TODO: do linear models for both survival and growth below ####
 # Effect of carbon on survival, linear model
@@ -103,6 +103,171 @@ summary(model4)
 # Effect of sand on survival
 model5 <- lm(surv ~ sand, data = clam)
 summary(model5)
+
+
+#### Original analysis of Growth by Sediment ####
+# Fit a linear mixed effects model 
+# Fixed effect: beach type; Random factor: site, with plot nested in site
+
+# Required packages
+# install.packages("nlme")
+# install.packages("multcomp")
+# install.packages("multcompView")
+# install.packages("lsmeans")
+# install.packages("lme4")
+# install.packages("lmerTest")
+# install.packages("TukeyC")
+
+library("nlme")
+library("multcomp")
+library("multcompView")
+library("lsmeans")
+library("lme4")
+library("lmerTest")
+library("TukeyC")
+
+#### Nested Anova with mixed effects model (nlme) ####
+#  Since type is read in as a integer [ no: character ] variable, convert it to factor
+ 
+#clam$Type = as.factor(clam$Type)
+#clam$beach = as.factor(clam$beach) ### TEST LATER TO SEE IF THIS AFFECTS ANYTHING  (BJGS)
+
+# THIS APPEARS TO BE THE NESTED WITH RANDOM VARIABLE, CAME COMMENTED
+#model = lme(surv ~ org, random = ~ 1|beach, data = clam)
+#summary(model)
+#anova.lme(model, type = "sequential", adjustSigma = FALSE)
+
+# Without beach as random factor # THIS WAS THE UNCOMMENTED OPTION (BJGS)
+model1 <- aov(grow ~ carb, data = clam)
+summary(model1)
+#
+plot(clam$grow,clam$carb)
+#
+modelm <- lm(grow ~ carb, data = clam)
+summary(modelm)
+# 
+model2 <- aov(grow ~ org, data = clam)
+summary(model2)
+#
+model2m <- lm(grow ~ org, data = clam)
+summary(model2m)
+#
+model3<- lm(grow ~ rocks, data = clam)
+summary(model3)
+#
+model4 <- lm(grow ~ srocks, data = clam)
+summary(model4)
+#
+model5 <- lm(grow ~ vcsand, data = clam)
+summary(model5)
+#
+model6 <- lm(grow ~ csand, data = clam)
+summary(model6)
+#
+model7 <- lm(grow ~ sand, data = clam)
+summary(model7)
+#
+model8 <- lm(grow ~ fsand, data = clam)
+summary(model8)
+#
+model9 <- lm(grow ~ vfsand, data = clam)
+summary(model9)
+#
+model10 <- lm(grow ~ silt, data = clam)
+summary(model10)
+#
+plot(clam$beach,clam$sand)
+plot(clam$beach,clam$carb)
+plot(clam$beach,clam$surv)
+#
+
+#### Are sediment variables affected by Clam Gardens? ####
+#**Analyzing Sediment with a Nested ANOVA**
+#*
+#install.packages("rmarkdown", lib = "C:/Program Files/R/R-4.0.2/library")
+#cat("options(pkgType = 'binary')", file = "~/.Rprofile", sep = "\n", append = TRUE)
+
+#
+rm(list= ls()) 
+# Here is my data set
+#
+cgsediment <- read.csv("cgsediment.csv")
+#
+#
+# **Look for significant differences of different sediment characteristics
+# and types**
+# The following commands will install these packages if they are not already installed:
+#if(!require(nlme)){install.packages("nlme")}
+#if(!require(multcomp)){install.packages("multcomp")}
+#if(!require(multcompView)){install.packages("multcompView")}
+#if(!require(lsmeans)){install.packages("lsmeans")}
+#if(!require(lme4)){install.packages("lme4")}
+#if(!require(lmerTest)){install.packages("lmerTest")}
+#if(!require(TukeyC)){install.packages("TukeyC")}
+#
+# **Nested anova with mixed effects model(nlme)**
+library(nlme)
+library(lme4)
+#
+cgsediment$Type = as.factor(cgsediment$Type)
+#
+
+model = lme(silt ~ Type, random = ~ 1|beach, data = cgsediment)
+#
+summary(model)
+anova.lme(model)
+#
+# Analysis of random effect (beach)
+#
+model.fixed = gls(silt ~ Type, data = cgsediment)
+anova(model, model.fixed)
+#
+# Post-hoc comparison of least-square means
+#
+library(multcomp)
+#
+posthoc = glht(model, linfct = mcp(Type = "Tukey"))
+mcs = summary(posthoc,test = adjusted("single-step"))
+mcs
+cld(mcs, level = 0.05, decreasing = TRUE)
+#
+# Checking assumptions of model
+hist(residuals(model))
+rug(residuals(model))
+plot(fitted(model), residuals(model))
+plot(model)
+#
+# Mixed effects model with lmer
+# 
+library(lmerTest)
+#
+cgsediment$beach = as.factor(cgsediment$beach)
+model = lmer(silt ~ Type + (1|beach), data = cgsediment, REML = TRUE)
+anova(model)
+#
+#
+# ** Nested anova with the aov function**
+fit = aov(silt ~ Type + Error(beach), data = cgsediment)
+summary(fit)
+#
+# Using Means Sq and Df values to get p-value for H = Type and Error = beach
+pf(q= 5.556/6.056,df1=1,df2=4, lower.tail = FALSE)
+#
+# Shapiro-Wilk test for normality
+#
+shapiro.test(residuals(model))
+#
+# Bartlett's test for homogeneity of variance
+#
+bartlett.test(silt ~ interaction(Type,beach), data = cgsediment)
+#
+plot(cgsediment$Type, cgsediment$silt)
+plot(cgsediment$beach, cgsediment$silt)
+plot(cgsediment$surv, cgsediment$silt)
+#
+
+#### /END/ Are sediment variables affected by Clam Gardens? ####
+
 
 
 #### Correlation of variables ####
