@@ -1,11 +1,10 @@
 # ms_clam_garden
-A repository used to analyze data used in support of the manuscript 'Effects of ancient anthropogenic clam gardens on the growth, survival, and transcriptome of Pacific littleneck clams (Leukoma staminea)'.      
-
-### Requirements       
-
-See requirements within the R scripts for R libraries.      
+Analyze data for the manuscript 'Effects of ancient anthropogenic clam gardens on the growth, survival, and transcriptome of Pacific littleneck clams (Leukoma staminea)'.      
 All analysis is done within the main directory of the repository.     
 
+### Requirements       
+See requirements within [Simple_reads_to_counts](https://github.com/bensutherland/Simple_reads_to_counts)        
+See requirements within the R scripts for R libraries.      
 
 ### 01. Abiotic factor and growth/ survival analysis
 Requires the following input data obtained from FigShare(#TODO):      
@@ -15,7 +14,14 @@ Requires the following input data obtained from FigShare(#TODO):
 Use the script interactively:      
 `01_scripts/01_pheno_and_abiotic_var.R`       
 
-Prepare a PCA of sample locations based on site metadata and survival/ growth, and investigate statistical correlates of survival and growth by running interactively:        
+This will allow you to: 
+- load data
+- plot a sample-based PCA from abiotic variables, with beaches overlaid
+- statistical analysis of the effects of abiotic variables on survival and growth
+- statistical analysis of the effects of clam garden state on abiotic variables
+- plot correlations between variables
+
+Outputs will be in `03_pheno_results`.      
 
 
 ### 02. Transcriptomic analysis
@@ -24,7 +30,7 @@ Follow the methods using paired-end reads against _de novo_ transcriptome from [
 
 Take the output from the repo and put it in the current repo, as per:       
 `02_input_data/out.matrix.csv` (gene expression data)        
-
+note: this matrix is also available from FigShare (#TODO)      
 
 #### 02.b Analysis of transcriptome data
 Use the following interactive script:      
