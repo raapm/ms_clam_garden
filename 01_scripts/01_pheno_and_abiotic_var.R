@@ -16,6 +16,7 @@ library("broom")
 library("devtools")
 # install_github("vqv/ggbiplot")
 library("ggbiplot")
+#install.packages("corrplot")
 
 ## Install packages and load libraries (statistical analysis)
 # install.packages("nlme")
@@ -26,16 +27,29 @@ library("ggbiplot")
 # install.packages("lmerTest")
 # install.packages("TukeyC")
 library("nlme")
+library("lme4")
+library("multcomp")
+#library("lmerTest") # has to be loaded later to load over lme4 when needed
+library("corrplot")
+
 
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path) # take main directory
 setwd(current.path)
 
+
+#### 00. Load data ####
 # Set input filenames
 #input.FN <- "02_input_data/cgsedimentPCA.csv" # the original input filename
 input.FN <- "02_input_data/cgsedimentPCA_from_Monique_2022-04-27.csv" # new, with initial weight/ height data
 input_AOV.FN <- "02_input_data/clam.csv"      # the original input filename
+
+# Input sediment data (#TODO: should be replaced) [ THIS WAS THE INPUT PROVIDED WITH THE SCRIPT ]
+#cgsediment <- read.csv("02_input_data/cgsediment.csv")
+cgsediment <- read.csv("02_input_data/cg_sediment_data_2022-03-25.csv")
+
+
 
 # Load data
 beaches <- read.csv(file = input.FN)
@@ -88,7 +102,7 @@ rm(drop_cols) # clean enviro
 head(clam) # this eventually will be replaced by the same input file as above
 
 
-#### 02.1 Abiotic variable effect on growth and survival ####
+#### 02.1 Effect of abiotic variable on growth and survival ####
 # Linear models of all variables on survival and growth
 
 # Which columns are to be focused on as putative explanatory variables? 
@@ -120,174 +134,103 @@ for(i in 1:length(explan_vars)){
 capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models.txt")
 
 
-#### Original analysis of Growth by Sediment ####
+#### 02.2 Effect of clam garden status on sediment variables ####
 # Fit a linear mixed effects model 
 # Fixed effect: beach type; Random factor: site, with plot nested in site
 
 # Required packages
 # install.packages("nlme")
-# install.packages("multcomp")
 # install.packages("multcompView")
 # install.packages("lsmeans")
-# install.packages("lme4")
-# install.packages("lmerTest")
+
 # install.packages("TukeyC")
 
-library("nlme")
-library("multcomp")
-library("multcompView")
-library("lsmeans")
-library("lme4")
-library("lmerTest")
-library("TukeyC")
 
-#### Nested Anova with mixed effects model (nlme) ####
-#  Since type is read in as a integer [ no: character ] variable, convert it to factor
- 
-#clam$Type = as.factor(clam$Type)
-#clam$beach = as.factor(clam$beach) ### TEST LATER TO SEE IF THIS AFFECTS ANYTHING  (BJGS)
 
-# THIS APPEARS TO BE THE NESTED WITH RANDOM VARIABLE, CAME COMMENTED
+# library("multcompView")
+# library("lsmeans")
+
+# library("TukeyC")
+
+# Nested ANOVA with mixed effects model (nlme)
+clam$Type <- as.factor(clam$Type)
+clam$beach <- as.factor(clam$beach)
+
+# THIS APPEARS TO BE THE NESTED WITH RANDOM VARIABLE, CAME COMMENTED OUT
 #model = lme(surv ~ org, random = ~ 1|beach, data = clam)
 #summary(model)
 #anova.lme(model, type = "sequential", adjustSigma = FALSE)
 
-# Without beach as random factor # THIS WAS THE UNCOMMENTED OPTION (BJGS)
-model1 <- aov(grow ~ carb, data = clam)
-summary(model1)
-#
-plot(clam$grow,clam$carb)
-#
-modelm <- lm(grow ~ carb, data = clam)
-summary(modelm)
-# 
-model2 <- aov(grow ~ org, data = clam)
-summary(model2)
-#
-model2m <- lm(grow ~ org, data = clam)
-summary(model2m)
-#
-model3<- lm(grow ~ rocks, data = clam)
-summary(model3)
-#
-model4 <- lm(grow ~ srocks, data = clam)
-summary(model4)
-#
-model5 <- lm(grow ~ vcsand, data = clam)
-summary(model5)
-#
-model6 <- lm(grow ~ csand, data = clam)
-summary(model6)
-#
-model7 <- lm(grow ~ sand, data = clam)
-summary(model7)
-#
-model8 <- lm(grow ~ fsand, data = clam)
-summary(model8)
-#
-model9 <- lm(grow ~ vfsand, data = clam)
-summary(model9)
-#
-model10 <- lm(grow ~ silt, data = clam)
-summary(model10)
-#
-plot(clam$beach,clam$sand)
-plot(clam$beach,clam$carb)
-plot(clam$beach,clam$surv)
-#
+# Plot abiotic variable levels by beach (exploratory only)
+par(mfrow = c(2,2))
+boxplot(clam$surv ~ clam$beach)
+boxplot(clam$sand ~ clam$beach) # note descending effect on sand
+boxplot(clam$carb ~ clam$beach) 
+boxplot(clam$inwt ~ clam$beach) 
 
-#### Are sediment variables affected by Clam Gardens? ####
-#**Analyzing Sediment with a Nested ANOVA**
-#*
-#install.packages("rmarkdown", lib = "C:/Program Files/R/R-4.0.2/library")
-#cat("options(pkgType = 'binary')", file = "~/.Rprofile", sep = "\n", append = TRUE)
+#### Complex statistical analyses starts, with only one variable shown ####
+head(beaches)
+head(cgsediment)
 
-#
-rm(list= ls()) 
-# Here is my data set
-#
-cgsediment <- read.csv("cgsediment.csv")
-#
-#
-# **Look for significant differences of different sediment characteristics
-# and types**
-# The following commands will install these packages if they are not already installed:
-#if(!require(nlme)){install.packages("nlme")}
-#if(!require(multcomp)){install.packages("multcomp")}
-#if(!require(multcompView)){install.packages("multcompView")}
-#if(!require(lsmeans)){install.packages("lsmeans")}
-#if(!require(lme4)){install.packages("lme4")}
-#if(!require(lmerTest)){install.packages("lmerTest")}
-#if(!require(TukeyC)){install.packages("TukeyC")}
-#
-# **Nested anova with mixed effects model(nlme)**
-library(nlme)
-library(lme4)
-#
-cgsediment$Type = as.factor(cgsediment$Type)
-#
-
-model = lme(silt ~ Type, random = ~ 1|beach, data = cgsediment)
-#
+# Linear mixed-effects model, with nested random effect
+cgsediment$Type <- as.factor(cgsediment$Type) # Make CG/ Ref into factor
+model <- lme(silt ~ Type, random = ~ 1|beach, data = cgsediment) # example with silt 
+#TODO: review with Monique what 1|beach indicates
 summary(model)
 anova.lme(model)
-#
-# Analysis of random effect (beach)
-#
-model.fixed = gls(silt ~ Type, data = cgsediment)
+
+# Linear model without nested random effect (for reference only)
+mod.no.nest <- lm(silt ~ Type, data = cgsediment)
+summary(mod.no.nest)
+
+# Analysis of random effect (beach) - fit linear model using generalized least squares
+model.fixed <- gls(silt ~ Type, data = cgsediment)
 anova(model, model.fixed)
-#
-# Post-hoc comparison of least-square means
-#
-library(multcomp)
-#
-posthoc = glht(model, linfct = mcp(Type = "Tukey"))
-mcs = summary(posthoc,test = adjusted("single-step"))
+
+# Post-hoc comparison of least-square means (general linear hypotheses)
+posthoc <- glht(model, linfct = mcp(Type = "Tukey"))
+mcs <- summary(posthoc,test = adjusted("single-step"))
 mcs
+
+# Set up a compact letter display of all pair-wise comparisons
 cld(mcs, level = 0.05, decreasing = TRUE)
-#
+
 # Checking assumptions of model
 hist(residuals(model))
 rug(residuals(model))
 plot(fitted(model), residuals(model))
 plot(model)
-#
+
 # Mixed effects model with lmer
-# 
-library(lmerTest)
-#
-cgsediment$beach = as.factor(cgsediment$beach)
-model = lmer(silt ~ Type + (1|beach), data = cgsediment, REML = TRUE)
+library(lmerTest) # Keep this here, to overload lmer from lme4
+cgsediment$beach <- as.factor(cgsediment$beach)
+model <- lmer(silt ~ Type + (1|beach), data = cgsediment, REML = TRUE)
 anova(model)
-#
-#
-# ** Nested anova with the aov function**
-fit = aov(silt ~ Type + Error(beach), data = cgsediment)
+
+# Nested ANOVA with the aov function
+fit <- aov(silt ~ Type + Error(beach), data = cgsediment)
 summary(fit)
-#
+
 # Using Means Sq and Df values to get p-value for H = Type and Error = beach
-pf(q= 5.556/6.056,df1=1,df2=4, lower.tail = FALSE)
-#
+pf(q= 5.556/6.056, df1=1, df2=4, lower.tail = FALSE) # the F distribution (probability distribution function)
+# TODO: discuss with Monique
+
 # Shapiro-Wilk test for normality
-#
 shapiro.test(residuals(model))
-#
+
 # Bartlett's test for homogeneity of variance
-#
 bartlett.test(silt ~ interaction(Type,beach), data = cgsediment)
-#
+
+par(mfrow = c(2,2))
 plot(cgsediment$Type, cgsediment$silt)
 plot(cgsediment$beach, cgsediment$silt)
 plot(cgsediment$surv, cgsediment$silt)
-#
 
-#### /END/ Are sediment variables affected by Clam Gardens? ####
+#### TODO: automate all variables, using only the required functions ####
+# /END section / #
 
 
-
-#### Correlation of variables ####
-#install.packages("corrplot")
-library("corrplot")
+#### 03. Correlation of variables ####
 colnames(clam)
 to_cor_phenos.vec <- c("grow", "surv", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
                        , "fsand", "vfsand", "silt")
@@ -309,7 +252,8 @@ corrplot(cor.set
          ) #plot matrix
 dev.off()
 
-#### Boxplot of survival ####
+#### 04. Extra plotting and exploration ####
+# Survival and growth by beach
 pdf(file = "03_pheno_results/surv_grow_by_beach.pdf", width = 8, height = 5)
 par(mfrow = c(1,2))
 #boxplot(clam$surv ~ clam$Type)
@@ -339,70 +283,101 @@ text(x = 13, y = 85, labels = paste0("adj. Rsq. = ", round(results$adj.r.squared
 text(x = 13, y = 75, labels = paste0("p-value: ", round(results$coefficients["carb","Pr(>|t|)"], digits = 5)))
 dev.off()
 
-##### New information ####
-plot(x = clam$inwt, y = clam$surv)
-mod.inwt.surv <- lm(formula = clam$inwt ~ clam$surv)
-mod.surv.inwt <- lm(formula = clam$surv ~ clam$inwt)
-summary(mod.inwt.surv)
-summary(mod.surv.inwt)
+#### 05. Effect of in-weight exploration ####
+# Is there a trend of higher inwt and higher survival? 
+plot(x = clam$inwt, y = clam$surv) 
+mod.surv.inwt <- lm(clam$surv ~ clam$inwt) # response by terms
+summary(mod.surv.inwt) # yes, p = 0.03
 
-# Carbonate? 
-plot(x = clam$inwt, y = clam$carb)
-plot(y = clam$inwt, x = clam$carb)
-mod1 <- lm(formula = clam$carb ~ clam$inwt)
-summary(mod1)
+# Is carbonate also correlated with inwt? 
+plot(x = clam$inwt, y = clam$carb) # higher inwt, lower carbonate
+mod1 <- lm(clam$carb ~ clam$inwt)
+summary(mod1)          # yes, p = 0.009
 
-mod.surv.carb <- lm(formula = clam$surv ~ clam$carb)
-summary(mod.surv.carb)
+# Is survival associated with carbonate? 
+mod.surv.carb <- lm(clam$surv ~ clam$carb)
+summary(mod.surv.carb) # yes, p = 0.0011
 
-boxplot(clam$surv ~ clam$beach)
-boxplot(clam$inwt ~ clam$beach)
+## Why does this remove the effect of inwt? Not clear, do not use 
+# mod.surv.carb.inwt <- lm(clam$surv ~ clam$carb + clam$inwt)
+# summary(mod.surv.carb.inwt)
 
-mod.surv.carb.inwt <- lm(formula = clam$surv ~ clam$carb + clam$inwt)
-summary(mod.surv.carb.inwt)
+# Is growth associated with inwt? 
+mod.grow.by.inwt <- lm(clam$grow ~ clam$inwt)
+summary(mod.grow.by.inwt) # no, p = 0.37
 
-par(mfrow=c(2,2))
+# Is growth associated with carbonate? 
+mod.grow.by.carb <- lm(clam$grow ~ clam$carb)
+summary(mod.grow.by.carb) # yes, p = 0.017
+
+# Plotting these variables to view these trends
+par(mfrow=c(2,3))
 plot(x = clam$carb, y = clam$surv)
 plot(x = clam$inwt, y = clam$surv)
 plot(x = clam$inwt, y = clam$carb)
 plot(x = clam$carb, y = clam$grow)
-mod.grow.by.carb <- lm(formula = clam$grow ~ clam$carb)
-summary(mod.grow.by.carb)
-
-
 plot(x = clam$inwt, y = clam$grow)
-
-mod.grow.by.inwt <- lm(formula = clam$grow ~ clam$inwt)
-summary(mod.grow.by.inwt)
-
-
 plot(x = clam$grow, y = clam$surv)
-#plot(y = clam$grow, x = clam$surv)
-mod.grow.by.surv <- lm(formula = clam$grow ~ clam$surv)
-summary(mod.grow.by.surv)
 
-#### Split beaches by weight group ####
-par(mfrow = c(1,2))
-plot(x = clam$carb[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
-      , y = clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
+# Is growth correlated to survival? 
+mod.grow.by.surv <- lm(clam$grow ~ clam$surv)
+summary(mod.grow.by.surv) # yes, p = 0.02
+
+
+## Further test: split beaches by weight group ##
+# Observe again the differences in inwts between the beaches
+par(mfrow = c(1,1))
+boxplot(clam$inwt ~ clam$beach) 
+# Beaches A, C, E, F are the lowest in weight beaches
+
+# Is there a significant effect of carbonate on survivorship in low in-weight beaches? 
+par(mfrow = c(2,2))
+plot(x = clam$carb[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"]
+      , y = clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"]
       , xlab = "carb (low weight beaches)"
        , ylab = "survivorship")
 
-mod <- lm(formula = clam$carb[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
-          ~ clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F"]
+mod <- lm(clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"] ~ 
+                      clam$carb[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"]
           )
-summary(mod)
+                    
+summary(mod) # p = 0.026
 
-plot(x = clam$carb[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
-     , y = clam$surv[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
+# Is there a significant effect of carbonate on survivorship in high in-weight beaches? 
+plot(x = clam$carb[clam$beach=="B" | clam$beach=="D"]
+     , y = clam$surv[clam$beach=="B" | clam$beach=="D"]
      , xlab = "carb (high weight beaches)"
      , ylab = "survivorship")
 
-mod <- lm(formula = clam$carb[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
-          ~ clam$surv[clam$beach=="A" | clam$beach=="B" | clam$beach=="D"]
-)
-summary(mod)
+mod <- lm(clam$surv[clam$beach=="B" | clam$beach=="D"] ~ clam$carb[clam$beach=="B" | clam$beach=="D"])
+summary(mod) # no, p = 0.2 (but note the lower n)
 
-par(mfrow = c(1,1))
-plot(y = clam$carb, x = clam$surv)
+# Then the complementary analysis: 
+# Is there an effect of in.wt on survivorship in low in-weight beaches?  
+plot(x = clam$inwt[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"]
+     , y = clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"]
+     , xlab = "inwt (low weight beaches)"
+     , ylab = "survivorship")
+
+mod <- lm(clam$surv[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"] ~ 
+            clam$inwt[clam$beach=="C" | clam$beach=="E" | clam$beach=="F" | clam$beach=="A"]
+)
+summary(mod) # no, p = 0.5796
+
+# Is there an effect of in.wt on survivorship in high weight beaches? 
+plot(x = clam$inwt[clam$beach=="B" | clam$beach=="D"]
+     , y = clam$surv[clam$beach=="B" | clam$beach=="D"]
+     , xlab = "inwt (high weight beaches)"
+     , ylab = "survivorship")
+
+mod <- lm(clam$surv[clam$beach=="B" | clam$beach=="D"] ~ clam$inwt[clam$beach=="B" | clam$beach=="D"])
+summary(mod) # yes,  p = 0.004 (but be aware of low n))
+
+# In conclusion: 
+# When separating beaches into low or high inwt beaches, 
+# we see a significant effect of carbonate on survivorship in the low inwt beaches, but not in the high inwt
+# we see a significant effect of inwt on survivorship in the high inwt beaches, but not in the low inwt beaches
+
+
+#### END ####
 
