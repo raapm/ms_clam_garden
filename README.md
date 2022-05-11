@@ -3,7 +3,7 @@ Analyze data for the manuscript 'Effects of ancient anthropogenic clam gardens o
 All analysis is done within the main directory of the repository.     
 
 ### Requirements       
-See requirements within [Simple_reads_to_counts](https://github.com/bensutherland/Simple_reads_to_counts)        
+See requirements within [Simple_reads_to_counts](https://github.com/bensutherland/Simple_reads_to_counts) for paired-end reads against a _de novo_ transcriptome        
 See requirements within the R scripts for R libraries.      
 
 ### 01. Abiotic factor and growth/ survival analysis
@@ -26,6 +26,8 @@ Outputs will be in `03_pheno_results`.
 
 ### 02. Transcriptomic analysis
 #### 02.a Raw reads to counts
+Requires raw read data from SRA (BioProject PRJNA818991, BioSamples SAMN26893882-SAMN26893909).      
+
 Follow the methods using paired-end reads against _de novo_ transcriptome from [Simple_reads_to_counts](https://github.com/bensutherland/Simple_reads_to_counts)        
 
 Take the output from the repo and put it in the current repo, as per:       
@@ -33,20 +35,28 @@ Take the output from the repo and put it in the current repo, as per:
 note: this matrix is also available from FigShare (#TODO)      
 
 #### 02.b Analysis of transcriptome data
-Use the following interactive script:      
+Requires the following input data obtained from FigShare(#TODO):      
+Sediment/ phenotypic data: `02_input_data/cg_sediment_data_2022-03-25.csv`      
+Uniprot IDs:               `02_input_data/project155.uniprot_blastp.txt.gz`      
+Other annotation:          `02_input_data/cgrnaseqBTv1.csv`      
+Read counts from (02.a):   `02_input_data/out.matrix.csv`     
+
+Use the script interactively:      
 `01_scripts/02_transcriptomic_analysis.R`     
-
-Note: this will also use `02_input_data/cg_sediment_data_2022-03-25.csv`      
-
-This script will allow you to analyze all data together ('all'), or individually by tissue ('gill' or 'dig' for digestive gland.       
-
-Set the variables:         
-Read mapping cutoff: `min.reads.mapping.per.transcript` (default = 10)      
-Minimum individuals passing threshold: `min.ind`       
-
-Go to the section `Exploratory MDS plots` to check custom labels on the mds plot. This will require choosing a datatype (all, gill, dig) from a previously-generated list.       
-
-This script will also let you find the gill- or digestive-gland-specific expressed genes by comparing those that passed filters in one tissue to the other tissue, and visa-versa.       
+...and set the following variables:      
+- `min.reads.mapping.per.transcript`, the read mapping cutoff (default = 10)      
+- `min.ind`, the minimum individuals passing threshold (default = 5)        
 
 
+This will allow you to: 
+- load data and format
+- prepare three datasets for analysis (i.e., gill, digestive gland, all)
+- filter for low expression and normalize, then generate MDS plot
+- evaluate tissue-specific expression and generate heatmap
+- identify differentially expressed genes by Clam Garden or by survival (%)
+- plot genes of interest
 
+Outputs will be in `04_txomic_results`.      
+
+
+**The manuscript is available here**: [preprint](https://www.biorxiv.org/search/ben%252Bj%252Bg%252Bsutherland)
