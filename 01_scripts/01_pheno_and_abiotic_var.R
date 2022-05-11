@@ -113,6 +113,7 @@ explan_vars <- colnames(
                         )
 rm(non_explan_cols) # clean enviro
 
+
 # Set nulls, Loop
 abiotic_fx.list <- list(); voi <- NULL
 
@@ -122,11 +123,11 @@ for(i in 1:length(explan_vars)){
   
   # Linear model per explan variable, survival
   abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]] <- lm(clam[, "surv"] ~ clam[, voi])
-  abiotic_fx.list[[paste0("surv_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0(voi, "surv.mod")]])
+  abiotic_fx.list[[paste0("surv_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]])
   
   # Linear model per explan variable, growth
   abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]] <- lm(clam[, "grow"] ~ clam[, voi])
-  abiotic_fx.list[[paste0("grow_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0(voi, "grow.mod")]])
+  abiotic_fx.list[[paste0("grow_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]])
   
 }
 
