@@ -89,7 +89,7 @@ p # uncomment if want to keep grey grid
 dev.off()
 
 
-#### 02. Statistical analysis, explanatory variable models ####
+#### 02. Statistical analysis, linear models ####
 # Input data (TODO: should use the same file for both PCA and AOV)
 clam <- read.csv(file = input_AOV.FN)
 head(clam) # this eventually will be replaced by the same input file as above
@@ -143,15 +143,12 @@ capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_gr
 # install.packages("nlme")
 # install.packages("multcompView")
 # install.packages("lsmeans")
-
 # install.packages("TukeyC")
-
-
-
 # library("multcompView")
 # library("lsmeans")
-
 # library("TukeyC")
+
+head(clam)
 
 # Nested ANOVA with mixed effects model (nlme)
 clam$Type <- as.factor(clam$Type)
@@ -175,8 +172,7 @@ head(cgsediment)
 
 # Linear mixed-effects model, with nested random effect
 cgsediment$Type <- as.factor(cgsediment$Type) # Make CG/ Ref into factor
-model <- lme(silt ~ Type, random = ~ 1|beach, data = cgsediment) # example with silt 
-#TODO: review with Monique what 1|beach indicates
+model <- lme(silt ~ Type, random = ~ 1|beach, data = cgsediment) # example with silt
 summary(model)
 anova.lme(model)
 
@@ -184,17 +180,17 @@ anova.lme(model)
 mod.no.nest <- lm(silt ~ Type, data = cgsediment)
 summary(mod.no.nest)
 
-# Analysis of random effect (beach) - fit linear model using generalized least squares
-model.fixed <- gls(silt ~ Type, data = cgsediment)
-anova(model, model.fixed)
+# # Analysis of random effect (beach) - fit linear model using generalized least squares
+# model.fixed <- gls(silt ~ Type, data = cgsediment)
+# anova(model, model.fixed)
 
-# Post-hoc comparison of least-square means (general linear hypotheses)
-posthoc <- glht(model, linfct = mcp(Type = "Tukey"))
-mcs <- summary(posthoc,test = adjusted("single-step"))
-mcs
+# # Post-hoc comparison of least-square means (general linear hypotheses)
+# posthoc <- glht(model, linfct = mcp(Type = "Tukey"))
+# mcs <- summary(posthoc,test = adjusted("single-step"))
+# mcs
 
-# Set up a compact letter display of all pair-wise comparisons
-cld(mcs, level = 0.05, decreasing = TRUE)
+# # Set up a compact letter display of all pair-wise comparisons
+# cld(mcs, level = 0.05, decreasing = TRUE)
 
 # Checking assumptions of model
 hist(residuals(model))
@@ -202,30 +198,30 @@ rug(residuals(model))
 plot(fitted(model), residuals(model))
 plot(model)
 
-# Mixed effects model with lmer
-library(lmerTest) # Keep this here, to overload lmer from lme4
-cgsediment$beach <- as.factor(cgsediment$beach)
-model <- lmer(silt ~ Type + (1|beach), data = cgsediment, REML = TRUE)
-anova(model)
+# # Mixed effects model with lmer
+# library(lmerTest) # Keep this here, to overload lmer from lme4
+# cgsediment$beach <- as.factor(cgsediment$beach)
+# model <- lmer(silt ~ Type + (1|beach), data = cgsediment, REML = TRUE)
+# anova(model)
 
-# Nested ANOVA with the aov function
-fit <- aov(silt ~ Type + Error(beach), data = cgsediment)
-summary(fit)
+# # Nested ANOVA with the aov function
+# fit <- aov(silt ~ Type + Error(beach), data = cgsediment)
+# summary(fit)
 
-# Using Means Sq and Df values to get p-value for H = Type and Error = beach
-pf(q= 5.556/6.056, df1=1, df2=4, lower.tail = FALSE) # the F distribution (probability distribution function)
-# TODO: discuss with Monique
+# # Using Means Sq and Df values to get p-value for H = Type and Error = beach
+# pf(q= 5.556/6.056, df1=1, df2=4, lower.tail = FALSE) # the F distribution (probability distribution function)
+# # TODO: discuss with Monique
 
 # Shapiro-Wilk test for normality
-shapiro.test(residuals(model))
+shapiro.test(residuals(model)) # p < 0.05 is a significant deviation from normality
 
 # Bartlett's test for homogeneity of variance
-bartlett.test(silt ~ interaction(Type,beach), data = cgsediment)
+bartlett.test(silt ~ interaction(Type, beach), data = cgsediment) # p < 0.05 is significant deviation from homogeneity
 
-par(mfrow = c(2,2))
-plot(cgsediment$Type, cgsediment$silt)
-plot(cgsediment$beach, cgsediment$silt)
-plot(cgsediment$surv, cgsediment$silt)
+# par(mfrow = c(2,2))
+# plot(cgsediment$Type, cgsediment$silt)
+# plot(cgsediment$beach, cgsediment$silt)
+# plot(cgsediment$surv, cgsediment$silt)
 
 #### TODO: automate all variables, using only the required functions ####
 # /END section / #
@@ -296,6 +292,7 @@ mod1 <- lm(clam$carb ~ clam$inwt)
 summary(mod1)          # yes, p = 0.009
 
 # Is survival associated with carbonate? 
+plot(x = clam$surv, y = clam$carb)
 mod.surv.carb <- lm(clam$surv ~ clam$carb)
 summary(mod.surv.carb) # yes, p = 0.0011
 
@@ -304,6 +301,7 @@ summary(mod.surv.carb) # yes, p = 0.0011
 # summary(mod.surv.carb.inwt)
 
 # Is growth associated with inwt? 
+plot(x = clam$inwt, y = clam$grow)
 mod.grow.by.inwt <- lm(clam$grow ~ clam$inwt)
 summary(mod.grow.by.inwt) # no, p = 0.37
 
@@ -329,7 +327,10 @@ summary(mod.grow.by.surv) # yes, p = 0.02
 # Observe again the differences in inwts between the beaches
 par(mfrow = c(1,1))
 boxplot(clam$inwt ~ clam$beach) 
+#boxplot(clam$inwt ~ clam$beach)  ####  CHECK WITH INITIAL HEIGHT
 # Beaches A, C, E, F are the lowest in weight beaches
+
+# IS THERE A SIGNIFICANT DIFFERENCE IN INWT IN BEACH A, C, E, F
 
 # Is there a significant effect of carbonate on survivorship in low in-weight beaches? 
 par(mfrow = c(2,2))
