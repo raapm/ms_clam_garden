@@ -4,6 +4,7 @@
 # clear workspace
 #rm(list=ls())
 
+#### Front Matter ####
 ## Install packages and load libraries (PCA)
 # install.packages("ggrepel")
 # install.packages("tidyverse")
@@ -31,7 +32,7 @@ library("lme4")
 library("multcomp")
 #library("lmerTest") # has to be loaded later to load over lme4 when needed
 library("corrplot")
-
+library("dplyr")
 
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -41,43 +42,56 @@ setwd(current.path)
 
 #### 00. Load data ####
 # Set input filenames
-#input.FN <- "02_input_data/cgsedimentPCA.csv" # the original input filename
-input.FN <- "02_input_data/cgsedimentPCA_from_Monique_2022-04-27.csv" # new, with initial weight/ height data
-input_AOV.FN <- "02_input_data/clam.csv"      # the original input filename
+input.FN <- "02_input_data/cg_sediment_phenos_2022-05-12.csv" # new, all-in-one file
 
+# TODO: delete these lines, as we now use one single input file #
+#input.FN <- "02_input_data/cgsedimentPCA_from_Monique_2022-04-27.csv" # new, with initial weight/ height data
+#input.FN <- "02_input_data/cgsedimentPCA.csv" # the original input filename
+#input_AOV.FN <- "02_input_data/clam.csv"      # the original input filename
 # Input sediment data (#TODO: should be replaced) [ THIS WAS THE INPUT PROVIDED WITH THE SCRIPT ]
 #cgsediment <- read.csv("02_input_data/cgsediment.csv")
-cgsediment <- read.csv("02_input_data/cg_sediment_data_2022-03-25.csv")
-
-
+#cgsediment <- read.csv("02_input_data/cg_sediment_data_2022-03-25.csv")
+# /END/ TODO: delete these lines, as we now use one single input file #
 
 # Load data
-beaches <- read.csv(file = input.FN)
-head(beaches)
-str(beaches)
+sed_pheno.df <- read.csv(file = input.FN)
+head(sed_pheno.df)
+str(sed_pheno.df)
 
-row.names(beaches) <- beaches[,"Beach"] # provide row names
-head(beaches)
+# Set variables as character if not including in the PCA
+sed_pheno.df$plot <- as.character(sed_pheno.df$plot)
+sed_pheno.df$day <- as.character(sed_pheno.df$day)
+str(sed_pheno.df)
+
+row.names(sed_pheno.df) <- sed_pheno.df[,"beach_id"] # provide row names
+head(sed_pheno.df)
+
+# Add grouping vector
+sed_pheno.df$Group <- "NA"
+sed_pheno.df[grep(pattern = "A|B", x = sed_pheno.df$beach), "Group"] <- "A"
+sed_pheno.df[grep(pattern = "C|D", x = sed_pheno.df$beach), "Group"] <- "B"
+sed_pheno.df[grep(pattern = "E|F", x = sed_pheno.df$beach), "Group"] <- "C"
 
 
 #### 01. PCA based on physical characteristics ####
 # PCA based on growth and physical attributes using prcomp
-pca_fit <- beaches %>%
-  select(where(is.numeric)) %>%  # only selects numeric columns
+pca.df <- select_if(sed_pheno.df, is.numeric) # only selects numeric columns
+
+pca_fit <- pca.df %>% 
   scale() %>%                    # scales the numeric columns
   prcomp()
 
 summary(pca_fit)
 
 # Plot biplot
-str(beaches$Group) 
+str(sed_pheno.df$Group) 
 
 # Plot PCA (ggplot)
 pdf(file = "03_pheno_results/per_plot_abiotic_PCA.pdf", width = 6, height = 6)
 par(mfrow = c(1,1))
-p <- ggbiplot(pcobj = pca_fit, labels = row.names(beaches)
+p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
               , color = 'black', varname.adjust = 1.1, varname.size = 2.9
-              , groups = beaches$Group, ellipse = TRUE
+              , groups = sed_pheno.df$Group, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
 p # uncomment if want to keep grey grid
@@ -167,7 +181,7 @@ boxplot(clam$carb ~ clam$beach)
 boxplot(clam$inwt ~ clam$beach) 
 
 #### Complex statistical analyses starts, with only one variable shown ####
-head(beaches)
+head(sed_pheno.df)
 head(cgsediment)
 
 # Linear mixed-effects model, with nested random effect
