@@ -208,13 +208,13 @@ for(i in 1:length(resp_vars)){
   # p < 0.05 is significant deviation from homogeneity
   
   # histogram of residuals
-  pdf(file = paste0("03_pheno_results/hist_residuals_nested_mod_", voi, ".pdf"), width = 5, height = 5)
+  pdf(file = paste0("03_pheno_results/model_assumption_graphs/hist_residuals_nested_mod_", voi, ".pdf"), width = 5, height = 5)
   hist(residuals(mod), main = voi, xlab = "Residuals of nested model")
   rug(residuals(mod))
   dev.off()
   
   # residuals by fitted plot
-  pdf(file = paste0("03_pheno_results/standard_residuals_by_fitted_val_", voi, ".pdf"), width = 5, height = 5)
+  pdf(file = paste0("03_pheno_results/model_assumption_graphs/standard_residuals_by_fitted_val_", voi, ".pdf"), width = 5, height = 5)
   plot(mod)
   dev.off()
   
