@@ -66,7 +66,7 @@ str(sed_pheno.df)
 row.names(sed_pheno.df) <- sed_pheno.df[,"beach_id"] # provide row names
 head(sed_pheno.df)
 
-# Add grouping vector
+# Add grouping vector (manually determined)
 sed_pheno.df$Group <- "NA"
 sed_pheno.df[grep(pattern = "A|B", x = sed_pheno.df$beach), "Group"] <- "A"
 sed_pheno.df[grep(pattern = "C|D", x = sed_pheno.df$beach), "Group"] <- "B"
@@ -82,9 +82,6 @@ pca_fit <- pca.df %>%
   prcomp()
 
 summary(pca_fit)
-
-# Plot biplot
-str(sed_pheno.df$Group) 
 
 # Plot PCA (ggplot)
 pdf(file = "03_pheno_results/per_plot_abiotic_PCA.pdf", width = 6, height = 6)
@@ -111,14 +108,17 @@ str(sed_pheno.df)
 drop_cols <- c("plot", "beach_id", "orig", "Group")
 sed_pheno.df <- sed_pheno.df[, !(colnames(sed_pheno.df) %in% drop_cols)]
 rm(drop_cols) # clean enviro
-head(sed_pheno.df) # this eventually will be replaced by the same input file as above
+head(sed_pheno.df)
 
 
 #### 02.1 Effect of abiotic variables on growth and survival ####
 # Linear models of all variables on survival and growth
 
-# Which columns are to be focused on as putative explanatory variables? 
-non_explan_cols <- c("beach", "grow", "surv")
+# Which columns are NOT to be focused on as putative explanatory variables for survival and growth? 
+non_explan_cols <- c(
+                     # "beach", 
+                      "grow", "surv"
+                      )
 
 explan_vars <- colnames(
                          sed_pheno.df[, !(colnames(sed_pheno.df) %in% non_explan_cols)]
@@ -126,7 +126,7 @@ explan_vars <- colnames(
 rm(non_explan_cols) # clean enviro
 
 
-# Set nulls, Loop
+# Set nulls, Loop to run lm per explan variable
 abiotic_fx.list <- list(); voi <- NULL
 
 for(i in 1:length(explan_vars)){
@@ -149,94 +149,111 @@ capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_gr
 
 #### 02.2 Effect of clam garden status on sediment variables ####
 # Fit a linear mixed effects model 
-# Fixed effect: beach type; Random factor: site, with plot nested in site
-
-# Required packages
-# install.packages("nlme")
-# install.packages("multcompView")
-# install.packages("lsmeans")
-# install.packages("TukeyC")
-# library("multcompView")
-# library("lsmeans")
-# library("TukeyC")
-
+## where fixed effect is beach type, and random factor is beach (plot nested in beach)
 head(sed_pheno.df)
+str(sed_pheno.df)
+
+# Update character to factor
+sed_pheno.df$Type <- as.factor(sed_pheno.df$Type)     # Make CG/ Ref into factor
+sed_pheno.df$beach <- as.factor(sed_pheno.df$beach)   # Make beach into factor
 
 # Nested ANOVA with mixed effects model (nlme)
-sed_pheno.df$Type <- as.factor(sed_pheno.df$Type)
-sed_pheno.df$beach <- as.factor(sed_pheno.df$beach)
 
 # THIS APPEARS TO BE THE NESTED WITH RANDOM VARIABLE, CAME COMMENTED OUT
 #model = lme(surv ~ org, random = ~ 1|beach, data = sed_pheno.df)
 #summary(model)
 #anova.lme(model, type = "sequential", adjustSigma = FALSE)
 
-# Plot abiotic variable levels by beach (exploratory only)
-par(mfrow = c(2,2))
-boxplot(sed_pheno.df$surv ~ sed_pheno.df$beach)
-boxplot(sed_pheno.df$sand ~ sed_pheno.df$beach) # note descending effect on sand
-boxplot(sed_pheno.df$carb ~ sed_pheno.df$beach) 
-boxplot(sed_pheno.df$inwt ~ sed_pheno.df$beach) 
 
-#### Complex statistical analyses starts, with only one variable shown ####
-head(sed_pheno.df)
-head(cgsediment)
+# START LOOP HERE #
+# Define variables that are NOT response variables
+non_resp_vars <- c("Type", "beach", "day")
 
-# Linear mixed-effects model, with nested random effect
-cgsediment$Type <- as.factor(cgsediment$Type) # Make CG/ Ref into factor
-model <- lme(silt ~ Type, random = ~ 1|beach, data = cgsediment) # example with silt
-summary(model)
-anova.lme(model)
+resp_vars <- explan_vars[grep(pattern = paste0(non_resp_vars, collapse = "|")
+                            , x = explan_vars
+                            , invert = T
+                            )]
+rm(non_resp_vars)
+print(paste0("The following are response variables to be considered: "))
+print(resp_vars)
 
-# Linear model without nested random effect (for reference only)
-mod.no.nest <- lm(silt ~ Type, data = cgsediment)
-summary(mod.no.nest)
+# Set nulls
+cg_fx.list <- list(); voi <- NULL; temp.df <- NULL; mod <- NULL
 
-# # Analysis of random effect (beach) - fit linear model using generalized least squares
-# model.fixed <- gls(silt ~ Type, data = cgsediment)
-# anova(model, model.fixed)
+for(i in 1:length(resp_vars)){
+  
+  voi <- resp_vars[i]
+  
+  # Need to separate out the section of interest, including only the voi, the type, and beach (due to potential limitations of lme syntax)
+  temp.df <- sed_pheno.df[,c(voi, "Type", "beach")]
+  colnames(x = temp.df)[1] <- "select_voi"
+  
+  # Linear mixed-effects model, with nested random effect; response variable as a function of Type
+  #cg_fx.list[[paste0(voi, "_target")]] <- voi # may not need, as voi is saved by name below
+  mod <- lme(select_voi ~ Type, random = ~ 1|beach, data = temp.df)
+  
+  # Store results in list
+  cg_fx.list[[paste0(voi, "_by_CG_type.mod")]] <- mod
+  cg_fx.list[[paste0(voi, "_by_CG_type.summary")]] <- summary(mod)
+  cg_fx.list[[paste0(voi, "_by_CG_type.anova.lme.summary")]] <- anova.lme(mod) # redundant
+  cg_fx.list
+  
+  ## Assumption tests
+  # Shapiro-Wilk test for normality
+  cg_fx.list[[paste0(voi, "_by_CG_type_mod_residuals_shapiro")]] <- shapiro.test(residuals(mod))
+  # p < 0.05 is a significant deviation from normality
+  
+  # Bartlett's test for homogeneity of variance
+  cg_fx.list[[paste0(voi, "_by_CG_type_mod_bartlett")]] <- bartlett.test(select_voi ~ interaction(Type, beach), data = temp.df)
+  # p < 0.05 is significant deviation from homogeneity
+  
+  # histogram of residuals
+  pdf(file = paste0("03_pheno_results/hist_residuals_nested_mod_", voi, ".pdf"), width = 5, height = 5)
+  hist(residuals(mod), main = voi, xlab = "Residuals of nested model")
+  rug(residuals(mod))
+  dev.off()
+  
+  # residuals by fitted plot
+  pdf(file = paste0("03_pheno_results/standard_residuals_by_fitted_val_", voi, ".pdf"), width = 5, height = 5)
+  plot(mod)
+  dev.off()
+  
+  # Plot the data
+  pdf(file = paste0("03_pheno_results/resp_var_by_CG_type_and_beach_", voi, ".pdf")
+      , width = 9.5, height = 6)
+  par(mfrow = c(2,2))
+  boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$Type, ylab = voi, xlab = "Type")
+  boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$beach, ylab = voi, xlab = "beach")
+  boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$Type *  sed_pheno.df$beach
+          , ylab = voi, xlab = "Type x beach")
+  dev.off()
+}
 
-# # Post-hoc comparison of least-square means (general linear hypotheses)
-# posthoc <- glht(model, linfct = mcp(Type = "Tukey"))
-# mcs <- summary(posthoc,test = adjusted("single-step"))
-# mcs
+# Then write out the output
+capture.output(cg_fx.list, file = "03_pheno_results/clam_garden_on_response_variables_models_nested.txt")
 
-# # Set up a compact letter display of all pair-wise comparisons
-# cld(mcs, level = 0.05, decreasing = TRUE)
 
-# Checking assumptions of model
-hist(residuals(model))
-rug(residuals(model))
-plot(fitted(model), residuals(model))
-plot(model)
+# Also collect data without nesting for reference only
+# Set nulls
+cg_fx_no_nest.list <- list(); voi <- NULL; temp.df <- NULL
 
-# # Mixed effects model with lmer
-# library(lmerTest) # Keep this here, to overload lmer from lme4
-# cgsediment$beach <- as.factor(cgsediment$beach)
-# model <- lmer(silt ~ Type + (1|beach), data = cgsediment, REML = TRUE)
-# anova(model)
+for(i in 1:length(resp_vars)){
+  
+  voi <- resp_vars[i]
+  
+  # Need to separate out the section of interest, including only the voi, the type, and beach (due to potential limitations of lme syntax)
+  temp.df <- sed_pheno.df[,c(voi, "Type", "beach")]
+  colnames(x = temp.df)[1] <- "select_voi"
+  
+  # Linear model, without nesting; response variable as a function of Type
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.mod")]] <- lm(select_voi ~ Type, data = temp.df)
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.summary")]] <- summary(cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.mod")]])
+  cg_fx_no_nest.list
+  
+}
 
-# # Nested ANOVA with the aov function
-# fit <- aov(silt ~ Type + Error(beach), data = cgsediment)
-# summary(fit)
-
-# # Using Means Sq and Df values to get p-value for H = Type and Error = beach
-# pf(q= 5.556/6.056, df1=1, df2=4, lower.tail = FALSE) # the F distribution (probability distribution function)
-# # TODO: discuss with Monique
-
-# Shapiro-Wilk test for normality
-shapiro.test(residuals(model)) # p < 0.05 is a significant deviation from normality
-
-# Bartlett's test for homogeneity of variance
-bartlett.test(silt ~ interaction(Type, beach), data = cgsediment) # p < 0.05 is significant deviation from homogeneity
-
-# par(mfrow = c(2,2))
-# plot(cgsediment$Type, cgsediment$silt)
-# plot(cgsediment$beach, cgsediment$silt)
-# plot(cgsediment$surv, cgsediment$silt)
-
-#### TODO: automate all variables, using only the required functions ####
-# /END section / #
+# Then write out the output
+capture.output(cg_fx_no_nest.list, file = "03_pheno_results/clam_garden_on_response_variables_models_not_nested.txt")
 
 
 #### 03. Correlation of variables ####
@@ -260,6 +277,7 @@ corrplot(cor.set
          , tl.cex = 0.9
          ) #plot matrix
 dev.off()
+
 
 #### 04. Extra plotting and exploration ####
 # Survival and growth by beach
@@ -291,6 +309,7 @@ results <- summary(mod)
 text(x = 13, y = 85, labels = paste0("adj. Rsq. = ", round(results$adj.r.squared, digits = 2)))
 text(x = 13, y = 75, labels = paste0("p-value: ", round(results$coefficients["carb","Pr(>|t|)"], digits = 5)))
 dev.off()
+
 
 #### 05. Effect of in-weight exploration ####
 # Is there a trend of higher inwt and higher survival? 
