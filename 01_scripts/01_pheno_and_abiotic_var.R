@@ -44,15 +44,6 @@ setwd(current.path)
 # Set input filenames
 input.FN <- "02_input_data/cg_sediment_phenos_2022-05-12.csv" # new, all-in-one file
 
-# TODO: delete these lines, as we now use one single input file #
-#input.FN <- "02_input_data/cgsedimentPCA_from_Monique_2022-04-27.csv" # new, with initial weight/ height data
-#input.FN <- "02_input_data/cgsedimentPCA.csv" # the original input filename
-#input_AOV.FN <- "02_input_data/clam.csv"      # the original input filename
-# Input sediment data (#TODO: should be replaced) [ THIS WAS THE INPUT PROVIDED WITH THE SCRIPT ]
-#cgsediment <- read.csv("02_input_data/cgsediment.csv")
-#cgsediment <- read.csv("02_input_data/cg_sediment_data_2022-03-25.csv")
-# /END/ TODO: delete these lines, as we now use one single input file #
-
 # Load data
 sed_pheno.df <- read.csv(file = input.FN)
 head(sed_pheno.df)
