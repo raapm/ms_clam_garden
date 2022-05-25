@@ -149,14 +149,6 @@ sed_pheno.df$Type <- as.factor(sed_pheno.df$Type)     # Make CG/ Ref into factor
 sed_pheno.df$beach <- as.factor(sed_pheno.df$beach)   # Make beach into factor
 
 # Nested ANOVA with mixed effects model (nlme)
-
-# THIS APPEARS TO BE THE NESTED WITH RANDOM VARIABLE, CAME COMMENTED OUT
-#model = lme(surv ~ org, random = ~ 1|beach, data = sed_pheno.df)
-#summary(model)
-#anova.lme(model, type = "sequential", adjustSigma = FALSE)
-
-
-# START LOOP HERE #
 # Define variables that are NOT response variables
 non_resp_vars <- c("Type", "beach", "day")
 
@@ -178,6 +170,10 @@ for(i in 1:length(resp_vars)){
   # Need to separate out the section of interest, including only the voi, the type, and beach (due to potential limitations of lme syntax)
   temp.df <- sed_pheno.df[,c(voi, "Type", "beach")]
   colnames(x = temp.df)[1] <- "select_voi"
+  
+  # Generate summary statistics
+  print(paste0("***Summary statistics for ", voi, "***"))
+  cg_fx.list[[paste0(voi, "_summary_statistics")]] <- tapply(temp.df$select_voi, temp.df$Type, summary)
   
   # Linear mixed-effects model, with nested random effect; response variable as a function of Type
   mod <- lme(select_voi ~ Type, random = ~ 1|beach, data = temp.df)
@@ -236,9 +232,44 @@ for(i in 1:length(resp_vars)){
   colnames(x = temp.df)[1] <- "select_voi"
   
   # Linear model, without nesting; response variable as a function of Type
-  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.mod")]] <- lm(select_voi ~ Type, data = temp.df)
-  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.summary")]] <- summary(cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.mod")]])
+  mod <- lm(select_voi ~ Type, data = temp.df)
+  
+  # Store results in list
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.mod")]] <- mod
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.summary")]] <- summary(mod)
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type.anova.summary")]] <- anova(mod)
   cg_fx_no_nest.list
+  
+  ## Assumption tests
+  # Shapiro-Wilk test for normality
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type_mod_residuals_shapiro")]] <- shapiro.test(residuals(mod))
+  # p < 0.05 is a significant deviation from normality
+  
+  # Bartlett's test for homogeneity of variance
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type_mod_bartlett")]] <- bartlett.test(select_voi ~ interaction(Type, beach), data = temp.df)
+  # p < 0.05 is significant deviation from homogeneity
+  
+  # histogram of residuals
+  pdf(file = paste0("03_pheno_results/model_assumption_graphs/hist_residuals_not_nested_mod_", voi, ".pdf"), width = 5, height = 5)
+  hist(residuals(mod), main = voi, xlab = "Residuals of nested model")
+  rug(residuals(mod))
+  dev.off()
+  
+  # residuals by fitted plot
+  pdf(file = paste0("03_pheno_results/model_assumption_graphs/standard_residuals_not_nested_by_fitted_val_", voi, ".pdf"), width = 5, height = 5)
+  print(plot(mod))
+  dev.off()
+
+  # Plot the data
+  pdf(file = paste0("03_pheno_results/resp_var_by_CG_type_and_beach_not_nested_", voi, ".pdf")
+      , width = 9.5, height = 6)
+  par(mfrow = c(2,2))
+  boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$Type, ylab = voi, xlab = "Type")
+  boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$beach, ylab = voi, xlab = "beach")
+  boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$Type *  sed_pheno.df$beach
+          , ylab = voi, xlab = "Type x beach")
+  dev.off()
+  
   
 }
 
