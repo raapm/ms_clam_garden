@@ -41,7 +41,7 @@ setwd(current.path)
 
 
 #### 00. Load data ####
-# Set input filenames
+# Set input filename
 input.FN <- "02_input_data/cg_sediment_phenos_2022-05-12.csv" # new, all-in-one file
 
 # Load data
@@ -49,7 +49,7 @@ sed_pheno.df <- read.csv(file = input.FN)
 head(sed_pheno.df)
 str(sed_pheno.df)
 
-# Set variables as character if not including in the PCA
+# Set variables that are not to be included in the PCA as characters
 sed_pheno.df$plot <- as.character(sed_pheno.df$plot)
 sed_pheno.df$day <- as.character(sed_pheno.df$day)
 str(sed_pheno.df)
@@ -105,7 +105,7 @@ head(sed_pheno.df)
 #### 02.1 Effect of abiotic variables on growth and survival ####
 # Linear models of all variables on survival and growth
 
-# Which columns are NOT to be focused on as putative explanatory variables for survival and growth? 
+# Which columns are to be considered response variables? 
 non_explan_cols <- c(
                      # "beach", 
                       "grow", "surv"
