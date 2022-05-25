@@ -106,15 +106,15 @@ head(sed_pheno.df)
 # Linear models of all variables on survival and growth
 
 # Which columns are to be considered response variables? 
-non_explan_cols <- c(
+response_variables <- c(
                      # "beach", 
                       "grow", "surv"
                       )
 
 explan_vars <- colnames(
-                         sed_pheno.df[, !(colnames(sed_pheno.df) %in% non_explan_cols)]
+                         sed_pheno.df[, !(colnames(sed_pheno.df) %in% response_variables)]
                         )
-rm(non_explan_cols) # clean enviro
+rm(response_variables) # clean enviro
 
 
 # Set nulls, Loop to run lm per explan variable
@@ -180,7 +180,6 @@ for(i in 1:length(resp_vars)){
   colnames(x = temp.df)[1] <- "select_voi"
   
   # Linear mixed-effects model, with nested random effect; response variable as a function of Type
-  #cg_fx.list[[paste0(voi, "_target")]] <- voi # may not need, as voi is saved by name below
   mod <- lme(select_voi ~ Type, random = ~ 1|beach, data = temp.df)
   
   # Store results in list
@@ -206,7 +205,7 @@ for(i in 1:length(resp_vars)){
   
   # residuals by fitted plot
   pdf(file = paste0("03_pheno_results/model_assumption_graphs/standard_residuals_by_fitted_val_", voi, ".pdf"), width = 5, height = 5)
-  plot(mod)
+  print(plot(mod)) # print is required here, or else a plot will not be produced
   dev.off()
   
   # Plot the data
