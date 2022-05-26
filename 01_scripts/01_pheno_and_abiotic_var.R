@@ -178,6 +178,7 @@ for(i in 1:length(resp_vars)){
   # Generate summary statistics
   print(paste0("***Summary statistics for ", voi, "***"))
   cg_fx.list[[paste0(voi, "_summary_statistics")]] <- tapply(temp.df$select_voi, temp.df$Type, summary)
+  cg_fx.list[[paste0(voi, "_sd")]] <- tapply(temp.df$select_voi, temp.df$Type, sd)
   
   # Linear mixed-effects model, with nested random effect; response variable as a function of Type
   mod <- lme(select_voi ~ Type, random = ~ 1|beach, data = temp.df)
