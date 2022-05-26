@@ -63,6 +63,15 @@ sed_pheno.df[grep(pattern = "A|B", x = sed_pheno.df$beach), "Group"] <- "A"
 sed_pheno.df[grep(pattern = "C|D", x = sed_pheno.df$beach), "Group"] <- "B"
 sed_pheno.df[grep(pattern = "E|F", x = sed_pheno.df$beach), "Group"] <- "C"
 
+# Attempts with data transformations (exploratory)
+bartlett.test(sed_pheno.df$inwt ~ interaction(Type, beach), data = sed_pheno.df)
+bartlett.test(log2(sed_pheno.df$inwt) ~ interaction(Type, beach), data = sed_pheno.df)
+bartlett.test(log10(sed_pheno.df$inwt) ~ interaction(Type, beach), data = sed_pheno.df)
+boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type * sed_pheno.df$beach)
+boxplot(log2(sed_pheno.df$inwt) ~ sed_pheno.df$Type * sed_pheno.df$beach)
+bartlett.test(sed_pheno.df$inwt ~ Type, data = sed_pheno.df)
+boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type)
+
 
 #### 01. PCA based on physical characteristics ####
 # PCA based on growth and physical attributes using prcomp
