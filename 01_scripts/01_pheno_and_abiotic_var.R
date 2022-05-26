@@ -260,7 +260,7 @@ for(i in 1:length(resp_vars)){
   # p < 0.05 is a significant deviation from normality
   
   # Bartlett's test for homogeneity of variance
-  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type_mod_bartlett")]] <- bartlett.test(select_voi ~ interaction(Type, beach), data = temp.df)
+  cg_fx_no_nest.list[[paste0(voi, "_by_CG_type_mod_bartlett")]] <- bartlett.test(select_voi ~ Type, data = temp.df)
   # p < 0.05 is significant deviation from homogeneity
   
   # histogram of residuals
