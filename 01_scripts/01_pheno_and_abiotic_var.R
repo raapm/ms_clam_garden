@@ -137,6 +137,8 @@ for(i in 1:length(explan_vars)){
 # Then write out the output
 capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models.txt")
 
+# Clean space 
+rm(explan_vars)
 
 #### 02.2 Effect of clam garden status on sediment variables ####
 # Fit a linear mixed effects model 
@@ -151,6 +153,8 @@ sed_pheno.df$beach <- as.factor(sed_pheno.df$beach)   # Make beach into factor
 # Nested ANOVA with mixed effects model (nlme)
 # Define variables that are NOT response variables
 non_resp_vars <- c("Type", "beach", "day")
+
+explan_vars <- colnames(sed_pheno.df)
 
 resp_vars <- explan_vars[grep(pattern = paste0(non_resp_vars, collapse = "|")
                             , x = explan_vars
@@ -275,6 +279,70 @@ for(i in 1:length(resp_vars)){
 
 # Then write out the output
 capture.output(cg_fx_no_nest.list, file = "03_pheno_results/clam_garden_on_response_variables_models_not_nested.txt")
+
+
+#### 02.3 Effect of beach location on all variables ####
+# Identify numeric cols
+numeric_vars <- colnames(select_if(sed_pheno.df, is.numeric)) # only selects numeric columns
+
+sed_pheno.df
+
+# Also collect data without nesting for reference only
+# Set nulls
+beach_fx.list <- list(); voi <- NULL; temp.df <- NULL
+
+for(i in 1:length(numeric_vars)){
+  
+  voi <- numeric_vars[i]
+  
+  # Need to separate out the section of interest, including only the voi, the type, and beach (due to potential limitations of lme syntax)
+  temp.df <- sed_pheno.df[,c(voi, "beach")]
+  colnames(x = temp.df)[1] <- "select_voi"
+  
+  # One-way ANOVA
+  mod <- lm(select_voi ~ beach, data = temp.df)
+  
+  # Store results in list
+  beach_fx.list[[paste0(voi, "_by_beach.mod")]] <- mod
+  beach_fx.list[[paste0(voi, "_by_beach.summary")]] <- summary(mod)
+  beach_fx.list[[paste0(voi, "_by_beach.anova.summary")]] <- anova(mod)
+  beach_fx.list
+  
+  ## Assumption tests
+  # Shapiro-Wilk test for normality
+  beach_fx.list[[paste0(voi, "_by_beach_mod_residuals_shapiro")]] <- shapiro.test(residuals(mod))
+  # p < 0.05 is a significant deviation from normality
+  
+  # Bartlett's test for homogeneity of variance
+  beach_fx.list[[paste0(voi, "_by_beach_mod_bartlett")]] <- bartlett.test(select_voi ~ interaction(beach), data = temp.df)
+  # p < 0.05 is significant deviation from homogeneity
+  
+  # # histogram of residuals
+  # pdf(file = paste0("03_pheno_results/model_assumption_graphs/hist_residuals_not_nested_mod_", voi, ".pdf"), width = 5, height = 5)
+  # hist(residuals(mod), main = voi, xlab = "Residuals of nested model")
+  # rug(residuals(mod))
+  # dev.off()
+  # 
+  # # residuals by fitted plot
+  # pdf(file = paste0("03_pheno_results/model_assumption_graphs/standard_residuals_not_nested_by_fitted_val_", voi, ".pdf"), width = 5, height = 5)
+  # print(plot(mod))
+  # dev.off()
+  # 
+  # # Plot the data
+  # pdf(file = paste0("03_pheno_results/resp_var_by_CG_type_and_beach_not_nested_", voi, ".pdf")
+  #     , width = 9.5, height = 6)
+  # par(mfrow = c(2,2))
+  # boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$Type, ylab = voi, xlab = "Type")
+  # boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$beach, ylab = voi, xlab = "beach")
+  # boxplot(sed_pheno.df[,voi] ~ sed_pheno.df$Type *  sed_pheno.df$beach
+  #         , ylab = voi, xlab = "Type x beach")
+  # dev.off()
+  
+  
+}
+
+# Then write out the output
+capture.output(beach_fx.list, file = "03_pheno_results/by_beach_numeric_vars_ANOVA.txt")
 
 
 #### 03. Correlation of variables ####
