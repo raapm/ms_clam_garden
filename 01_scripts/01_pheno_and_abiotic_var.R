@@ -318,6 +318,11 @@ for(i in 1:length(numeric_vars)){
   beach_fx.list[[paste0(voi, "_by_beach.anova.summary")]] <- anova(mod)
   beach_fx.list
   
+  # Generate summary statistics
+  print(paste0("***Summary statistics for ", voi, "***"))
+  beach_fx.list[[paste0(voi, "_means")]] <- tapply(temp.df$select_voi, temp.df$beach, mean)
+  beach_fx.list[[paste0(voi, "_sd")]] <- tapply(temp.df$select_voi, temp.df$beach, sd)
+  
   ## Assumption tests
   # Shapiro-Wilk test for normality
   beach_fx.list[[paste0(voi, "_by_beach_mod_residuals_shapiro")]] <- shapiro.test(residuals(mod))
