@@ -24,7 +24,7 @@ setwd(current.path)
 ## User set filenames:
 uniprot.FN <- "02_input_data/project155.uniprot_blastp.txt.gz"
 contig_annot.FN <- "02_input_data/cgrnaseqBTv1.csv"
-input.FN <- "02_input_data/out.matrix.csv"
+input.FN <- "02_input_data/out.matrix_cg_2022-06-07.csv"
 pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv"
 
 ## User-set variables

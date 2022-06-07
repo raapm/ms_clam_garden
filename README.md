@@ -31,7 +31,7 @@ Requires raw read data from SRA (BioProject PRJNA818991, BioSamples SAMN26893882
 Follow the methods using paired-end reads against _de novo_ transcriptome from [Simple_reads_to_counts](https://github.com/bensutherland/Simple_reads_to_counts)        
 
 Take the output from the repo and put it in the current repo, as per:       
-`02_input_data/out.matrix.csv` (gene expression data)        
+`02_input_data/out.matrix_cg_2022-06-07.csv` (gene expression data)        
 note: this matrix is also available from FigShare (#TODO)      
 
 #### 02.b Analysis of transcriptome data
@@ -39,7 +39,7 @@ Requires the following input data obtained from FigShare(#TODO):
 Sediment/ phenotypic data: `02_input_data/cg_sediment_data_2022-03-25.csv`      
 Uniprot IDs:               `02_input_data/project155.uniprot_blastp.txt.gz`      
 Other annotation:          `02_input_data/cgrnaseqBTv1.csv`      
-Read counts from (02.a):   `02_input_data/out.matrix.csv`     
+Read counts from (02.a):   `02_input_data/out.matrix_cg_2022-06-07.csv`     
 
 Use the script interactively:      
 `01_scripts/02_transcriptomic_analysis.R`     
