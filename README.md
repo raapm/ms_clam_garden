@@ -32,11 +32,11 @@ Follow the methods using paired-end reads against _de novo_ transcriptome from [
 
 Take the output from the repo and put it in the current repo, as per:       
 `02_input_data/out.matrix_cg_2022-06-07.csv` (gene expression data)        
-note: this matrix is also available from FigShare (#TODO)      
+note: this matrix is also available from FigShare, DOI: 10.6084/m9.figshare.19735753      
 
 #### 02.b Analysis of transcriptome data
 Requires the following input data obtained from FigShare(#TODO):      
-Sediment/ phenotypic data: `02_input_data/cg_sediment_data_2022-03-25.csv`      
+Sediment/ phenotypic data: `02_input_data/cg_sediment_phenos_2022-05-12.csv`      
 Uniprot IDs:               `02_input_data/project155.uniprot_blastp.txt.gz`      
 Other annotation:          `02_input_data/cgrnaseqBTv1.csv`      
 Read counts from (02.a):   `02_input_data/out.matrix_cg_2022-06-07.csv`     
