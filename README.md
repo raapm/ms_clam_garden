@@ -6,10 +6,11 @@ All analysis is done within the main directory of the repository.
 See requirements within [Simple_reads_to_counts](https://github.com/bensutherland/Simple_reads_to_counts) for paired-end reads against a _de novo_ transcriptome        
 See requirements within the R scripts for R libraries.      
 
+Requires input data obtained from FigShare: DOI: 10.6084/m9.figshare.19735753         
+
 ### 01. Abiotic factor and growth/ survival analysis
-Requires the following input data obtained from FigShare(#TODO):      
+Requires the following input data (obtained from FigShare, see above):      
 `02_input_data/cg_sediment_data_2022-03-25.csv`      
-`02_input_data/cgsedimentPCA.csv`           
 
 Use the script interactively:      
 `01_scripts/01_pheno_and_abiotic_var.R`       
@@ -32,14 +33,14 @@ Follow the methods using paired-end reads against _de novo_ transcriptome from [
 
 Take the output from the repo and put it in the current repo, as per:       
 `02_input_data/out.matrix_cg_2022-06-07.csv` (gene expression data)        
-note: this matrix is also available from FigShare, DOI: 10.6084/m9.figshare.19735753      
+note: this matrix is also available from FigShare (see DOI above).      
 
 #### 02.b Analysis of transcriptome data
-Requires the following input data obtained from FigShare(#TODO):      
+Requires the following input data (obtained from FigShare, see above):      
 Sediment/ phenotypic data: `02_input_data/cg_sediment_phenos_2022-05-12.csv`      
+Read counts from (02.a):   `02_input_data/out.matrix_cg_2022-06-07.csv`     
 Uniprot IDs:               `02_input_data/project155.uniprot_blastp.txt.gz`      
 Other annotation:          `02_input_data/cgrnaseqBTv1.csv`      
-Read counts from (02.a):   `02_input_data/out.matrix_cg_2022-06-07.csv`     
 
 Use the script interactively:      
 `01_scripts/02_transcriptomic_analysis.R`     
@@ -57,6 +58,5 @@ This will allow you to:
 - plot genes of interest
 
 Outputs will be in `04_txomic_results`.      
-
 
 **The manuscript is available here**: [preprint](https://www.biorxiv.org/search/ben%252Bj%252Bg%252Bsutherland)
