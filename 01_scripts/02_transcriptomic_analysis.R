@@ -246,7 +246,9 @@ plotMDS(x = doi
           gsub(pattern = "\\.eff.*", replacement = ""
                , x = gsub(pattern = ".*\\.CG\\_", replacement = "", x = colnames(doi$counts))
           )
-        , cex= 1) 
+        , cex= 1
+        #, xlab = # This is where one would update the axis label, but I think it is fine as is now
+        ) 
 dev.off()
 
 
