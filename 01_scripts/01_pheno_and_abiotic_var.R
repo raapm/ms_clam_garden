@@ -47,7 +47,15 @@ pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
 # Load data
 sed_pheno.df <- read.csv(file = pheno.FN)
 head(sed_pheno.df)
-str(sed_pheno.df)
+
+# Growth - only use one measurement, as selected below
+growth_to_drop <- "grow.wt.surv" # Keep height
+#growth_to_drop <- "grow.ht.all" # Keep weight
+
+sed_pheno.df <- sed_pheno.df[, -(which(colnames(sed_pheno.df)==growth_to_drop))]
+head(sed_pheno.df)
+colnames(sed_pheno.df)[grep(pattern = "grow", x = colnames(sed_pheno.df))] <- "grow" # rename the retained
+head(sed_pheno.df)
 
 # Set variables that are not to be included in the PCA as characters
 sed_pheno.df$plot <- as.character(sed_pheno.df$plot)
