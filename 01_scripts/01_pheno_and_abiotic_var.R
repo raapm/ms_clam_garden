@@ -77,6 +77,22 @@ boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type)
 # PCA based on growth and physical attributes using prcomp
 pca.df <- select_if(sed_pheno.df, is.numeric) # only selects numeric columns
 
+colnames(pca.df)
+
+# Rename column headers for figure
+colnames(pca.df)[colnames(pca.df)=="inwt"] <- "initial weight"
+colnames(pca.df)[colnames(pca.df)=="inht"] <- "initial height"
+colnames(pca.df)[colnames(pca.df)=="grow"] <- "growth"
+colnames(pca.df)[colnames(pca.df)=="surv"] <- "survival"
+colnames(pca.df)[colnames(pca.df)=="carb"] <- "carbonate"
+colnames(pca.df)[colnames(pca.df)=="org"] <- "organics"
+colnames(pca.df)[colnames(pca.df)=="srocks"] <- "small rocks"
+colnames(pca.df)[colnames(pca.df)=="vcsand"] <- "very course sand"
+colnames(pca.df)[colnames(pca.df)=="csand"] <- "course sand"
+colnames(pca.df)[colnames(pca.df)=="fsand"] <- "fine sand"
+colnames(pca.df)[colnames(pca.df)=="vfsand"] <- "very fine sand"
+
+# Scale and run PCA
 pca_fit <- pca.df %>% 
   scale() %>%                    # scales the numeric columns
   prcomp()
@@ -91,7 +107,28 @@ p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
               , groups = sed_pheno.df$Group, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
-p # uncomment if want to keep grey grid
+summary_details <- summary(pca_fit)
+
+custom_x_axis  <-  paste0("Standardized PC1 ("
+                       , round(
+                            summary_details[["importance"]][2,1] * 100
+                            , digits = 1
+                            )
+                       , "%)"
+                      )
+
+custom_y_axis  <-  paste0("Standardized PC2 ("
+                          , round(
+                            summary_details[["importance"]][2,2] * 100
+                            , digits = 1
+                          )
+                          , "%)"
+)
+
+p + xlab(custom_x_axis) + ylab(custom_y_axis)
+  
+
+#p # uncomment for default xlab/ylab, if want to keep grey grid
 
 # optional to remove grey grid
 # p <- p + theme(panel.background = element_rect(fill = "white", colour = NA) )
@@ -99,6 +136,16 @@ p # uncomment if want to keep grey grid
 # p
 dev.off()
 
+# For confirmation of custom values, should look the same
+pdf(file = "03_pheno_results/per_plot_abiotic_PCA_default_axes.pdf", width = 6, height = 6)
+
+p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
+              , color = 'black', varname.adjust = 1.1, varname.size = 2.9
+              , groups = sed_pheno.df$Group, ellipse = TRUE
+              ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
+
+p
+dev.off()
 
 #### 02. Statistical analysis, linear models ####
 head(sed_pheno.df)
