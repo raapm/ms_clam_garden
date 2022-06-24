@@ -42,10 +42,10 @@ setwd(current.path)
 
 #### 00. Load data ####
 # Set input filename
-input.FN <- "02_input_data/cg_sediment_phenos_2022-05-12.csv" # new, all-in-one file
+pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
 
 # Load data
-sed_pheno.df <- read.csv(file = input.FN)
+sed_pheno.df <- read.csv(file = pheno.FN)
 head(sed_pheno.df)
 str(sed_pheno.df)
 

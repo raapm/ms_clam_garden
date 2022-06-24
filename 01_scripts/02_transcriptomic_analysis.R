@@ -25,7 +25,7 @@ setwd(current.path)
 uniprot.FN <- "02_input_data/project155.uniprot_blastp.txt.gz"
 contig_annot.FN <- "02_input_data/cgrnaseqBTv1.csv"
 input.FN <- "02_input_data/out.matrix_cg_2022-06-07.csv"
-pheno.FN <- "02_input_data/cg_sediment_data_2022-03-25.csv"
+pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
 
 ## User-set variables
 min.reads.mapping.per.transcript <- 10 # Variable to find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
