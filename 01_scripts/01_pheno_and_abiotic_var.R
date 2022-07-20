@@ -48,11 +48,15 @@ pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
 sed_pheno.df <- read.csv(file = pheno.FN)
 head(sed_pheno.df)
 
-# Growth - only use one measurement, as selected below
+# User select variable #
+# Growth - only use one measurement, either height based on weight or height, as selected below (choose the one to drop)
 growth_to_drop <- "grow.wt.surv" # Keep height
 #growth_to_drop <- "grow.ht.all" # Keep weight
 
-sed_pheno.df <- sed_pheno.df[, -(which(colnames(sed_pheno.df)==growth_to_drop))]
+# Remove the unselected growth estimate
+print(paste0("You have chosen to drop ", growth_to_drop, " and therefore keep the alternate growth measure"))
+print("Dropping now")
+sed_pheno.df <- sed_pheno.df[, -(which(colnames(sed_pheno.df)==growth_to_drop))] # remove the unselected
 head(sed_pheno.df)
 colnames(sed_pheno.df)[grep(pattern = "grow", x = colnames(sed_pheno.df))] <- "grow" # rename the retained
 head(sed_pheno.df)
@@ -71,14 +75,14 @@ sed_pheno.df[grep(pattern = "A|B", x = sed_pheno.df$beach), "Group"] <- "A"
 sed_pheno.df[grep(pattern = "C|D", x = sed_pheno.df$beach), "Group"] <- "B"
 sed_pheno.df[grep(pattern = "E|F", x = sed_pheno.df$beach), "Group"] <- "C"
 
-# Attempts with data transformations (exploratory)
-bartlett.test(sed_pheno.df$inwt ~ interaction(Type, beach), data = sed_pheno.df)
-bartlett.test(log2(sed_pheno.df$inwt) ~ interaction(Type, beach), data = sed_pheno.df)
-bartlett.test(log10(sed_pheno.df$inwt) ~ interaction(Type, beach), data = sed_pheno.df)
-boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type * sed_pheno.df$beach)
-boxplot(log2(sed_pheno.df$inwt) ~ sed_pheno.df$Type * sed_pheno.df$beach)
-bartlett.test(sed_pheno.df$inwt ~ Type, data = sed_pheno.df)
-boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type)
+# # Attempts with data transformations (exploratory)
+# bartlett.test(sed_pheno.df$inwt ~ interaction(Type, beach), data = sed_pheno.df)
+# bartlett.test(log2(sed_pheno.df$inwt) ~ interaction(Type, beach), data = sed_pheno.df)
+# bartlett.test(log10(sed_pheno.df$inwt) ~ interaction(Type, beach), data = sed_pheno.df)
+# boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type * sed_pheno.df$beach)
+# boxplot(log2(sed_pheno.df$inwt) ~ sed_pheno.df$Type * sed_pheno.df$beach)
+# bartlett.test(sed_pheno.df$inwt ~ Type, data = sed_pheno.df)
+# boxplot(sed_pheno.df$inwt ~ sed_pheno.df$Type)
 
 
 #### 01. PCA based on physical characteristics ####
@@ -111,7 +115,7 @@ summary(pca_fit)
 pdf(file = "03_pheno_results/per_plot_abiotic_PCA.pdf", width = 6, height = 6)
 par(mfrow = c(1,1))
 p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
-              , color = 'black', varname.adjust = 1.1, varname.size = 2.9
+              , color = 'black', varname.adjust = 1.3, varname.size = 2.9
               , groups = sed_pheno.df$Group, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
@@ -148,7 +152,7 @@ dev.off()
 pdf(file = "03_pheno_results/per_plot_abiotic_PCA_default_axes.pdf", width = 6, height = 6)
 
 p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
-              , color = 'black', varname.adjust = 1.1, varname.size = 2.9
+              , color = 'black', varname.adjust = 1.3, varname.size = 2.9
               , groups = sed_pheno.df$Group, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
@@ -180,6 +184,8 @@ explan_vars <- colnames(
                         )
 rm(response_variables) # clean enviro
 
+print(paste0("These are your explanatory variables, tested based on their effect on growth and survival:"))
+print(explan_vars)
 
 # Set nulls, Loop to run lm per explan variable
 abiotic_fx.list <- list(); voi <- NULL
@@ -417,7 +423,7 @@ capture.output(beach_fx.list, file = "03_pheno_results/by_beach_numeric_vars_ANO
 
 #### 03. Correlation of variables ####
 colnames(sed_pheno.df)
-to_cor_phenos.vec <- c("grow", "surv", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
+to_cor_phenos.vec <- c("grow", "surv", "inwt", "inht", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
                        , "fsand", "vfsand", "silt")
 cor.set <- cor(sed_pheno.df[, to_cor_phenos.vec]
                , use = "pairwise.complete.obs" # cor bw ea pair var is done with all pairs of obs on those var 
@@ -479,25 +485,25 @@ summary(mod.surv.inwt) # yes, p = 0.03
 # Is carbonate also correlated with inwt? 
 plot(x = sed_pheno.df$inwt, y = sed_pheno.df$carb) # higher inwt, lower carbonate
 mod1 <- lm(sed_pheno.df$carb ~ sed_pheno.df$inwt)
-summary(mod1)          # yes, p = 0.009
+summary(mod1)          # yes, p = 0.005
 
 # Is survival associated with carbonate? 
 plot(x = sed_pheno.df$surv, y = sed_pheno.df$carb)
 mod.surv.carb <- lm(sed_pheno.df$surv ~ sed_pheno.df$carb)
 summary(mod.surv.carb) # yes, p = 0.0011
 
-## Why does this remove the effect of inwt? Not clear, do not use 
-# mod.surv.carb.inwt <- lm(sed_pheno.df$surv ~ sed_pheno.df$carb + sed_pheno.df$inwt)
-# summary(mod.surv.carb.inwt)
-
 # Is growth associated with inwt? 
 plot(x = sed_pheno.df$inwt, y = sed_pheno.df$grow)
 mod.grow.by.inwt <- lm(sed_pheno.df$grow ~ sed_pheno.df$inwt)
-summary(mod.grow.by.inwt) # no, p = 0.37
+summary(mod.grow.by.inwt) 
+# growth by weight: no, p = 0.37
+# growth by height: no (close), p = 0.05
 
 # Is growth associated with carbonate? 
 mod.grow.by.carb <- lm(sed_pheno.df$grow ~ sed_pheno.df$carb)
-summary(mod.grow.by.carb) # yes, p = 0.017
+summary(mod.grow.by.carb) 
+# growth by weight: yes, p = 0.017
+# growth by height: yes, p = 0.003
 
 # Plotting these variables to view these trends
 par(mfrow=c(2,3))
@@ -510,19 +516,23 @@ plot(x = sed_pheno.df$grow, y = sed_pheno.df$surv)
 
 # Is growth correlated to survival? 
 mod.grow.by.surv <- lm(sed_pheno.df$grow ~ sed_pheno.df$surv)
-summary(mod.grow.by.surv) # yes, p = 0.02
-
+summary(mod.grow.by.surv) 
+# growth by weight: yes, p = 0.02
+# growth by height: yes, p = 0.0004
 
 ## Further test: split beaches by weight group ##
 # Observe again the differences in inwts between the beaches
-par(mfrow = c(1,1))
-boxplot(sed_pheno.df$inwt ~ sed_pheno.df$beach) 
-#boxplot(sed_pheno.df$inwt ~ sed_pheno.df$beach)  ####  CHECK WITH INITIAL HEIGHT
-# Beaches A, C, E, F are the lowest in weight beaches
+par(mfrow = c(1,2))
+boxplot(sed_pheno.df$inwt ~ sed_pheno.df$beach)
+boxplot(sed_pheno.df$inht ~ sed_pheno.df$beach) 
+# Beaches A, C, E, F are the lowest in weight beaches; arguably these have no significant difference between them
+## and it is only beach B and D that are elevated relative to the others
 
-# IS THERE A SIGNIFICANT DIFFERENCE IN INWT IN BEACH A, C, E, F
+# (#TODO) formally test: IS THERE A SIGNIFICANT DIFFERENCE IN INWT IN BEACH A, C, E, F? 
 
+### Carbonate on survivorship, stratified by weight class beaches
 # Is there a significant effect of carbonate on survivorship in low in-weight beaches? 
+pdf(file = "03_pheno_results/weight_stratified_beaches_and_carbonate_inwt.pdf", width = 6, height = 6)
 par(mfrow = c(2,2))
 plot(x = sed_pheno.df$carb[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"]
       , y = sed_pheno.df$surv[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"]
@@ -533,7 +543,7 @@ mod <- lm(sed_pheno.df$surv[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | 
                       sed_pheno.df$carb[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"]
           )
                     
-summary(mod) # p = 0.026
+summary(mod) # yes; p = 0.026
 
 # Is there a significant effect of carbonate on survivorship in high in-weight beaches? 
 plot(x = sed_pheno.df$carb[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"]
@@ -544,8 +554,8 @@ plot(x = sed_pheno.df$carb[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"]
 mod <- lm(sed_pheno.df$surv[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"] ~ sed_pheno.df$carb[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"])
 summary(mod) # no, p = 0.2 (but note the lower n)
 
-# Then the complementary analysis: 
-# Is there an effect of in.wt on survivorship in low in-weight beaches?  
+### Inwt on survivorship, stratified by weight class beaches (complementary analysis)
+# Is there a significant effect of in.wt on survivorship in low in-weight beaches?  
 plot(x = sed_pheno.df$inwt[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"]
      , y = sed_pheno.df$surv[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"]
      , xlab = "inwt (low weight beaches)"
@@ -554,7 +564,7 @@ plot(x = sed_pheno.df$inwt[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | s
 mod <- lm(sed_pheno.df$surv[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"] ~ 
             sed_pheno.df$inwt[sed_pheno.df$beach=="C" | sed_pheno.df$beach=="E" | sed_pheno.df$beach=="F" | sed_pheno.df$beach=="A"]
 )
-summary(mod) # no, p = 0.5796
+summary(mod) # no, p = 0.53
 
 # Is there an effect of in.wt on survivorship in high weight beaches? 
 plot(x = sed_pheno.df$inwt[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"]
@@ -563,13 +573,15 @@ plot(x = sed_pheno.df$inwt[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"]
      , ylab = "survivorship")
 
 mod <- lm(sed_pheno.df$surv[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"] ~ sed_pheno.df$inwt[sed_pheno.df$beach=="B" | sed_pheno.df$beach=="D"])
-summary(mod) # yes,  p = 0.004 (but be aware of low n))
+summary(mod) # yes,  p = 0.004 (be aware of low n))
 
-# In conclusion: 
+dev.off()
+
+# In conclusion for this section: 
 # When separating beaches into low or high inwt beaches, 
 # we see a significant effect of carbonate on survivorship in the low inwt beaches, but not in the high inwt
 # we see a significant effect of inwt on survivorship in the high inwt beaches, but not in the low inwt beaches
-
+# Conclude: the significant effect of carbonate on survivorship is independent of inwt for the equal and low inwt beaches
 
 #### END ####
 
