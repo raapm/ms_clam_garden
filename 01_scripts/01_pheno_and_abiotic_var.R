@@ -448,15 +448,33 @@ dev.off()
 # Survival and growth by beach
 pdf(file = "03_pheno_results/surv_grow_by_beach.pdf", width = 8, height = 5)
 par(mfrow = c(1,2))
-#boxplot(sed_pheno.df$surv ~ sed_pheno.df$Type)
 boxplot(sed_pheno.df$surv ~ sed_pheno.df$beach, las = 1
-        , xlab = "Beach", ylab = "% Survival"
+        , xlab = "Beach", ylab = "Survival (%)"
+        , col = c("grey", "white")
         )
+mtext(text = "A"
+      #, text = expression(paste(bold("A")))
+      , side = 3, line = 1.5
+      , at = -0.5
+      #, at=par("usr")[1]+0.05*diff(par("usr")[1:2])
+      )
+#legend("topright", legend = c("CG", "Ref"), fill = c("grey", "white"))
 
-#boxplot(sed_pheno.df$grow ~ sed_pheno.df$Type)
+
 boxplot(sed_pheno.df$grow ~ sed_pheno.df$beach, las = 1
-        , xlab = "Beach", ylab = "Growth"
+        , xlab = "Beach", ylab = "Growth (%)"
+        , col = c("grey", "white")
 )
+
+mtext(text = "B"
+      #, text = expression(paste(bold("A")))
+      , side = 3, line = 1.5
+      , at = -0.5
+      #, at=par("usr")[1]+0.05*diff(par("usr")[1:2])
+      )
+
+legend("topright", legend = c("CG", "Ref"), fill = c("grey", "white"))
+
 dev.off()
 
 # Consider survival and carbonates
