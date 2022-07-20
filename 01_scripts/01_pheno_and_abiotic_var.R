@@ -430,6 +430,46 @@ cor.set <- cor(sed_pheno.df[, to_cor_phenos.vec]
                # note: only works with "pearson" method
                )
 
+# Rename variables
+colnames(cor.set) <- gsub(pattern = "grow", replacement = "growth", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "grow", replacement = "growth", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "surv", replacement = "survival", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "surv", replacement = "survival", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "inwt", replacement = "input weight ", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "inwt", replacement = "input weight", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "inht", replacement = "input height ", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "inht", replacement = "input height", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "carb", replacement = "carbonate", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "carb", replacement = "carbonate", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "org", replacement = "organic", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "org", replacement = "organic", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "srocks", replacement = "small rocks", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "srocks", replacement = "small rocks", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "vcsand", replacement = "very course sand", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "vcsand", replacement = "very course sand", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "csand", replacement = "course sand", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "csand", replacement = "course sand", x = rownames(cor.set))
+
+# Must be done before 
+colnames(cor.set) <- gsub(pattern = "vfsand", replacement = "very fine sand", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "vfsand", replacement = "very fine sand", x = rownames(cor.set))
+
+# Must be done after
+colnames(cor.set) <- gsub(pattern = "fsand", replacement = "fine sand", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "fsand", replacement = "fine sand", x = rownames(cor.set))
+
+
+cor.set
+
+# Plot
 pdf(file = "03_pheno_results/surv_grow_abiotic_correlations.pdf", width = 4, height = 4)
 par(mfrow = c(1,1))
 corrplot(cor.set
@@ -439,7 +479,7 @@ corrplot(cor.set
          #, type = "lower"
          #, outline = T
          , tl.col = "black"
-         , tl.cex = 0.9
+         , tl.cex = 0.8
          ) #plot matrix
 dev.off()
 
