@@ -470,7 +470,7 @@ rownames(cor.set) <- gsub(pattern = "fsand", replacement = "fine sand", x = rown
 cor.set
 
 # Plot
-pdf(file = "03_pheno_results/surv_grow_abiotic_correlations.pdf", width = 4, height = 4)
+pdf(file = "03_pheno_results/surv_grow_abiotic_correlations.pdf", width = 7, height = 7)
 par(mfrow = c(1,1))
 corrplot(cor.set
          , method = "circle"
@@ -479,7 +479,7 @@ corrplot(cor.set
          #, type = "lower"
          #, outline = T
          , tl.col = "black"
-         , tl.cex = 0.8
+         , tl.cex = 1
          ) #plot matrix
 dev.off()
 
@@ -529,8 +529,10 @@ mod <- lm(surv ~ carb, data = sed_pheno.df)
 summary(mod)
 
 results <- summary(mod)
-text(x = 13, y = 85, labels = paste0("adj. Rsq. = ", round(results$adj.r.squared, digits = 2)))
-text(x = 13, y = 75, labels = paste0("p-value: ", round(results$coefficients["carb","Pr(>|t|)"], digits = 5)))
+text(x = 13, y = 85, labels = bquote("Adjusted R"^2*"="*.(round(results$adj.r.squared, digits = 2))))
+text(x = 13, y = 75
+     , labels = bquote(italic(p)*"-value: "*.(round(results$coefficients["carb","Pr(>|t|)"], digits = 5))))
+
 dev.off()
 
 
