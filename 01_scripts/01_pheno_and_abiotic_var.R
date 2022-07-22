@@ -171,6 +171,7 @@ head(sed_pheno.df)
 
 #### 02.0 Evaluate inwt and inht per beach
 
+pdf(file = "03_pheno_results/input_weight_height_by_beach.pdf", width = 7, height = 5)
 par(mfrow=c(1,2))
 
 # Weight
@@ -187,6 +188,18 @@ boxplot(sed_pheno.df$inht ~ sed_pheno.df$beach
         , ylab = "input height (cm)"
 )
 
+dev.off()
+
+# Significance testing
+#Weight
+mod.wt <- aov(formula = sed_pheno.df$inwt ~ sed_pheno.df$beach)
+summary(mod.wt)
+TukeyHSD(mod.wt)
+
+#Height
+mod.ht <- aov(formula = sed_pheno.df$inht ~ sed_pheno.df$beach)
+summary(mod.ht)
+TukeyHSD(mod.ht)
 
 
 #### 02.1 Effect of abiotic variables on growth and survival ####
@@ -225,6 +238,32 @@ for(i in 1:length(explan_vars)){
 
 # Then write out the output
 capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models.txt")
+
+# Second run, without Beach D (the significantly bigger at planting beach)
+sed_pheno.df.bck <- sed_pheno.df # backup the original
+sed_pheno.df <- sed_pheno.df[sed_pheno.df$beach!="D", ]
+
+# Re-run, as above
+# Set nulls, Loop to run lm per explan variable
+abiotic_fx.list <- list(); voi <- NULL
+
+for(i in 1:length(explan_vars)){
+  
+  voi <- explan_vars[i]
+  
+  # Linear model per explan variable, survival
+  abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]] <- lm(sed_pheno.df[, "surv"] ~ sed_pheno.df[, voi])
+  abiotic_fx.list[[paste0("surv_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]])
+  
+  # Linear model per explan variable, growth
+  abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]] <- lm(sed_pheno.df[, "grow"] ~ sed_pheno.df[, voi])
+  abiotic_fx.list[[paste0("grow_by_", voi, ".summary")]] <- summary(abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]])
+  
+}
+
+# Then write out the output
+capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models_no_beach_D.txt")
+
 
 # Clean space 
 rm(explan_vars)
