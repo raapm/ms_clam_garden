@@ -239,6 +239,55 @@ for(i in 1:length(explan_vars)){
 # Then write out the output
 capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models.txt")
 
+# Extract the important values for the table
+explan_vars
+
+# Select only continuous variables
+cont_explan_vars <- explan_vars[grep(pattern = "Type|beach|day", x = explan_vars, invert = T)]
+
+data.mat <- matrix(nrow = length(cont_explan_vars), ncol = 5)
+colnames(data.mat) <- c("explan_var", "surv_pval", "surv_rsq", "grow_pval", "grow_rsq")
+data.df <- as.data.frame(data.mat)
+data.df
+
+for(i in 1:length(cont_explan_vars)){
+  
+  voi <- cont_explan_vars[i]
+  
+  data.df[i ,"explan_var"] <- voi
+  
+  # Survival
+  out.obj <- summary(abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]])
+  rsq <- out.obj$adj.r.squared
+  #pval <- out.obj$coefficients["sed_pheno.df[, voi]" ,"Pr(>|t|)"] # does not work
+  pval <- out.obj$coefficients[
+                                grep(pattern = "sed_pheno.df", x = rownames(out.obj$coefficients))
+                                ,"Pr(>|t|)"
+                                ]
+                              
+  data.df[i, "surv_pval"] <- pval
+  data.df[i, "surv_rsq"] <- rsq
+  
+  # Growth
+  out.obj <- summary(abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]])
+  rsq <- out.obj$adj.r.squared
+  #pval <- out.obj$coefficients["sed_pheno.df[, voi]" ,"Pr(>|t|)"] # does not work
+  pval <- out.obj$coefficients[
+    grep(pattern = "sed_pheno.df", x = rownames(out.obj$coefficients))
+    ,"Pr(>|t|)"
+  ]
+  
+  data.df[i, "grow_pval"] <- pval
+  data.df[i, "grow_rsq"] <- rsq
+  
+  
+}
+
+data.df
+
+# Save out results
+write.csv(x = data.df, file = "03_pheno_results/abiotic_variables_on_grow_surv_table.csv", quote = F)
+
 # Second run, without Beach D (the significantly bigger at planting beach)
 sed_pheno.df.bck <- sed_pheno.df # backup the original
 sed_pheno.df <- sed_pheno.df[sed_pheno.df$beach!="D", ]
@@ -264,9 +313,57 @@ for(i in 1:length(explan_vars)){
 # Then write out the output
 capture.output(abiotic_fx.list, file = "03_pheno_results/abiotic_variables_on_grow_surv_models_no_beach_D.txt")
 
+# Extract the important values for the table
+explan_vars
+
+# Select only continuous variables
+cont_explan_vars <- explan_vars[grep(pattern = "Type|beach|day", x = explan_vars, invert = T)]
+
+data.mat <- matrix(nrow = length(cont_explan_vars), ncol = 5)
+colnames(data.mat) <- c("explan_var", "surv_pval", "surv_rsq", "grow_pval", "grow_rsq")
+data.df <- as.data.frame(data.mat)
+data.df
+
+for(i in 1:length(cont_explan_vars)){
+  
+  voi <- cont_explan_vars[i]
+  
+  data.df[i ,"explan_var"] <- voi
+  
+  # Survival
+  out.obj <- summary(abiotic_fx.list[[paste0("surv_by_", voi, ".mod")]])
+  rsq <- out.obj$adj.r.squared
+  #pval <- out.obj$coefficients["sed_pheno.df[, voi]" ,"Pr(>|t|)"] # does not work
+  pval <- out.obj$coefficients[
+    grep(pattern = "sed_pheno.df", x = rownames(out.obj$coefficients))
+    ,"Pr(>|t|)"
+  ]
+  
+  data.df[i, "surv_pval"] <- pval
+  data.df[i, "surv_rsq"] <- rsq
+  
+  # Growth
+  out.obj <- summary(abiotic_fx.list[[paste0("grow_by_", voi, ".mod")]])
+  rsq <- out.obj$adj.r.squared
+  #pval <- out.obj$coefficients["sed_pheno.df[, voi]" ,"Pr(>|t|)"] # does not work
+  pval <- out.obj$coefficients[
+    grep(pattern = "sed_pheno.df", x = rownames(out.obj$coefficients))
+    ,"Pr(>|t|)"
+  ]
+  
+  data.df[i, "grow_pval"] <- pval
+  data.df[i, "grow_rsq"] <- rsq
+  
+  
+}
+
+data.df
+
+write.csv(x = data.df, file = "03_pheno_results/abiotic_variables_on_grow_surv_table_no_beach_D.csv", quote = F)
 
 # Clean space 
 rm(explan_vars)
+sed_pheno.df <- sed_pheno.df.bck # Revert back to the full dataset
 
 #### 02.2 Effect of clam garden status on sediment variables ####
 # Fit a linear mixed effects model 
