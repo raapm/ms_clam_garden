@@ -169,6 +169,25 @@ sed_pheno.df <- sed_pheno.df[, !(colnames(sed_pheno.df) %in% drop_cols)]
 rm(drop_cols) # clean enviro
 head(sed_pheno.df)
 
+#### 02.0 Evaluate inwt and inht per beach
+
+par(mfrow=c(1,2))
+
+# Weight
+boxplot(sed_pheno.df$inwt ~ sed_pheno.df$beach
+        , las = 1
+        , xlab = "Beach"
+        , ylab = "input weight (g)"
+        )
+
+# Height
+boxplot(sed_pheno.df$inht ~ sed_pheno.df$beach
+        , las = 1
+        , xlab = "Beach"
+        , ylab = "input height (cm)"
+)
+
+
 
 #### 02.1 Effect of abiotic variables on growth and survival ####
 # Linear models of all variables on survival and growth
