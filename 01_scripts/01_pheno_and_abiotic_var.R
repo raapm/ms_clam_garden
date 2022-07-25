@@ -580,7 +580,26 @@ capture.output(beach_fx.list, file = "03_pheno_results/by_beach_numeric_vars_ANO
 colnames(sed_pheno.df)
 to_cor_phenos.vec <- c("grow", "surv", "inwt", "inht", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
                        , "fsand", "vfsand", "silt")
-cor.set <- cor(sed_pheno.df[, to_cor_phenos.vec]
+
+# Exclude outlier beach? Toggle below
+exclude_beach <- FALSE
+#exclude_beach <- TRUE
+
+if(exclude_beach==TRUE){
+  
+  sed_pheno_for_corr.df <- sed_pheno.df[sed_pheno.df$beach!="D", ]
+  special_tag <- "_excl_beach_d"
+  
+}else{
+
+  sed_pheno_for_corr.df <- sed_pheno.df  
+  special_tag <- ""
+  
+}
+
+
+# Correlate
+cor.set <- cor(sed_pheno_for_corr.df[, to_cor_phenos.vec]
                , use = "pairwise.complete.obs" # cor bw ea pair var is done with all pairs of obs on those var 
                # note: only works with "pearson" method
                )
@@ -625,7 +644,7 @@ rownames(cor.set) <- gsub(pattern = "fsand", replacement = "fine sand", x = rown
 cor.set
 
 # Plot
-pdf(file = "03_pheno_results/surv_grow_abiotic_correlations.pdf", width = 7, height = 7)
+pdf(file = paste0("03_pheno_results/surv_grow_abiotic_correlations", special_tag, ".pdf"), width = 7, height = 7)
 par(mfrow = c(1,1))
 corrplot(cor.set
          , method = "circle"
