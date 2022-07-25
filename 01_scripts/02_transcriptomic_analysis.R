@@ -175,7 +175,7 @@ for(i in 1:length(datatypes)){
 
 
 
-#### 5. Normalization and Data Visualization ####
+#### 05. Normalization and Data Visualization ####
 # Use the list above (doi.DGEList.filt) and the three different datatypes to produce three different analyses, depending on the tissue type(s) included
 datatypes
 
@@ -232,7 +232,7 @@ doi.DGEList.filt.norm$dig$samples
 # Here forward use doi.DGEList.filt.norm
 
 
-#### 06. MDS plots
+#### 06. MDS plots ####
 datatypes
 
 # Plot all samples (both tissues) with concise labels
@@ -458,7 +458,7 @@ logcounts_tissue_specific.df <- as.matrix(x = logcounts_tissue_specific.df)
 # test <- head(logcounts_tissue_specific.df, n = 20)
 # test <- as.matrix(test)
 
-pdf(file = "04_txomic_results/tissue_specific_heatmap.pdf", width = "6", height = 6)
+pdf(file = "04_txomic_results/tissue_specific_heatmap.pdf", width = 6, height = 6)
 heatmap(x = logcounts_tissue_specific.df
         , Rowv = NA
         , labRow = NA # Removes contig ids
@@ -705,6 +705,7 @@ for(i in 1:length(names(lists_of_interest))){
   
   
 }
+
 
 #### 10. Gene Of Interest plotting ####
 ### Clam garden consistent DEGs
