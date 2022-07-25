@@ -800,7 +800,26 @@ dev.off()
 # Survival plot, tissue-specific GOIs
 ## Also consider R-squared value derived from these normalized cpm values shown in the plot
 
-pdf(file = "04_txomic_results/GOI_expr_survival.pdf", width = 9, height = 5)
+# If need to highlight a single beach...
+# Toggle the following to TRUE: 
+plot_specific_beach <- FALSE
+#plot_specific_beach <- TRUE
+
+# Digestive gland plot cols
+plot.col <- rep(x = "black", times = length(gois_prepared.list$dig$beach))
+special_tag <- ""
+
+if(plot_specific_beach==TRUE){
+
+  plot.col[which(gois_prepared.list$dig$beach=="D")] <- "red"
+  special_tag <- "_colour_by_specific_beach"
+  
+}
+
+plot.col
+special_tag
+
+pdf(file = paste0("04_txomic_results/GOI_expr_survival", special_tag,".pdf"), width = 9, height = 5)
 par(mfrow=c(2,3)
     , mar= c(3,3,3,1) + 0.2
     , mgp = c(2,0.75,0)
@@ -810,6 +829,7 @@ par(mfrow=c(2,3)
 plot(x = gois_prepared.list$dig$surv, y = gois_prepared.list$dig$`25356128`, las = 1
      , xlab = "Survival (%)"
      , ylab = "log2 cpm( hsp70-12a ), Dig."
+     , col = plot.col
      )
 
 mod <- lm(gois_prepared.list$dig$`25356128` ~ gois_prepared.list$dig$surv)
@@ -821,6 +841,7 @@ text(x = 60, y = -2, labels = bquote("Adjusted R"^2*"="*.(round(out.mod$adj.r.sq
 plot(x = gois_prepared.list$dig$surv, y = gois_prepared.list$dig$`25357396`, las = 1
      , xlab = "Survival (%)"
      , ylab = "log2 cpm( aminopeptidase ), Dig."
+     , col = plot.col
 )
 
 mod <- lm(gois_prepared.list$dig$`25357396` ~ gois_prepared.list$dig$surv)
@@ -832,6 +853,7 @@ text(x = 85, y = 5, labels = bquote("Adjusted R"^2*"="*.(round(out.mod$adj.r.squ
 plot(x = gois_prepared.list$dig$surv, y = gois_prepared.list$dig$`25364008`, las = 1
      , xlab = "Survival (%)"
      , ylab = "log2 cpm( mucin-2 ), Dig."
+     , col = plot.col
 )
 
 mod <- lm(gois_prepared.list$dig$`25364008` ~ gois_prepared.list$dig$surv)
@@ -841,10 +863,19 @@ text(x = 85, y = 4, labels = bquote("Adjusted R"^2*"="*.(round(out.mod$adj.r.squ
 
 
 ## Gill
+plot.col <- rep(x = "black", times = length(gois_prepared.list$gill$beach))
+
+if(plot_specific_beach==TRUE){
+  
+  plot.col[which(gois_prepared.list$gill$beach=="D")] <- "red"  
+  
+}
+
 # 25371088
 plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25371088`, las = 1
      , xlab = "Survival (%)"
      , ylab = "log2 cpm( hsp70-12a ), Gill"
+     , col = plot.col
 )
 
 mod <- lm(gois_prepared.list$gill$`25371088` ~ gois_prepared.list$gill$surv)
@@ -856,6 +887,7 @@ text(x = 85, y = 2, labels = bquote("Adjusted R"^2*"="*.(round(out.mod$adj.r.squ
 plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25357391`, las = 1
      , xlab = "Survival (%)"
      , ylab = "log2 cpm( hsp90 ), Gill"
+     , col = plot.col
 )
 
 mod <- lm(gois_prepared.list$gill$`25357391` ~ gois_prepared.list$gill$surv)
@@ -867,6 +899,7 @@ text(x = 85, y = 5, labels = bquote("Adjusted R"^2*"="*.(round(out.mod$adj.r.squ
 plot(x = gois_prepared.list$gill$surv, y = gois_prepared.list$gill$`25385377`, las = 1
      , xlab = "Survival (%)"
      , ylab = "log2 cpm( toll-like-rec. 1 ), Gill"
+     , col = plot.col
 )
 
 mod <- lm(gois_prepared.list$gill$`25385377` ~ gois_prepared.list$gill$surv)
