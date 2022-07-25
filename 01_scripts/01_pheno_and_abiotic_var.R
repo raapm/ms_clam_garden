@@ -48,7 +48,11 @@ pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
 sed_pheno.df <- read.csv(file = pheno.FN)
 head(sed_pheno.df)
 
-# User select variable #
+# User select variables #
+# Exclude outlier beach? Toggle below
+#exclude_beach <- FALSE
+exclude_beach <- TRUE
+
 # Growth - only use one measurement, either height based on weight or height, as selected below (choose the one to drop)
 growth_to_drop <- "grow.wt.surv" # Keep height
 #growth_to_drop <- "grow.ht.all" # Keep weight
@@ -86,8 +90,22 @@ sed_pheno.df[grep(pattern = "E|F", x = sed_pheno.df$beach), "Group"] <- "C"
 
 
 #### 01. PCA based on physical characteristics ####
+# Set up scope of dataset based on user-input variable
+if(exclude_beach==TRUE){
+  
+  sed_pheno_for_pca.df <- sed_pheno.df[sed_pheno.df$beach!="D", ]
+  special_tag <- "_excl_beach_d"
+  
+}else{
+  
+  sed_pheno_for_pca.df <- sed_pheno.df  
+  special_tag <- ""
+  
+}
+
+
 # PCA based on growth and physical attributes using prcomp
-pca.df <- select_if(sed_pheno.df, is.numeric) # only selects numeric columns
+pca.df <- select_if(sed_pheno_for_pca.df, is.numeric) # only selects numeric columns
 
 colnames(pca.df)
 
@@ -111,12 +129,23 @@ pca_fit <- pca.df %>%
 
 summary(pca_fit)
 
+# Designate groups based on the order of the samples in the pca object
+head(pca.df)
+rownames(pca.df)
+
+#dataset_groups <- rep(x = "NA", times = nrow(pca.df))
+dataset_groups <- rownames(pca.df)
+dataset_groups[grep(pattern = "A|B", x = dataset_groups)] <- "A"
+dataset_groups[grep(pattern = "C|D", x = dataset_groups)] <- "B"
+dataset_groups[grep(pattern = "E|F", x = dataset_groups)] <- "C"
+
+
 # Plot PCA (ggplot)
-pdf(file = "03_pheno_results/per_plot_abiotic_PCA.pdf", width = 6, height = 6)
+pdf(file = paste0("03_pheno_results/per_plot_abiotic_PCA", special_tag,".pdf"), width = 6, height = 6)
 par(mfrow = c(1,1))
-p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
+p <- ggbiplot(pcobj = pca_fit, labels = row.names(pca.df)
               , color = 'black', varname.adjust = 1.3, varname.size = 2.9
-              , groups = sed_pheno.df$Group, ellipse = TRUE
+              , groups = dataset_groups, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
 summary_details <- summary(pca_fit)
@@ -149,15 +178,18 @@ p + xlab(custom_x_axis) + ylab(custom_y_axis)
 dev.off()
 
 # For confirmation of custom values, should look the same
-pdf(file = "03_pheno_results/per_plot_abiotic_PCA_default_axes.pdf", width = 6, height = 6)
+pdf(file = paste0("03_pheno_results/per_plot_abiotic_PCA_default_axes", special_tag,".pdf"), width = 6, height = 6)
 
-p <- ggbiplot(pcobj = pca_fit, labels = row.names(sed_pheno.df)
+p <- ggbiplot(pcobj = pca_fit, labels = row.names(pca.df)
               , color = 'black', varname.adjust = 1.3, varname.size = 2.9
-              , groups = sed_pheno.df$Group, ellipse = TRUE
+              , groups = dataset_groups, ellipse = TRUE
               ) + expand_limits(x = c(-2, 2), y = c(-2.5,2))
 
 p
 dev.off()
+
+# Return full dataset is not needed, because pca.df is not used again
+
 
 #### 02. Statistical analysis, linear models ####
 head(sed_pheno.df)
@@ -581,10 +613,7 @@ colnames(sed_pheno.df)
 to_cor_phenos.vec <- c("grow", "surv", "inwt", "inht", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
                        , "fsand", "vfsand", "silt")
 
-# Exclude outlier beach? Toggle below
-exclude_beach <- FALSE
-#exclude_beach <- TRUE
-
+# Exclude outlier beach? 
 if(exclude_beach==TRUE){
   
   sed_pheno_for_corr.df <- sed_pheno.df[sed_pheno.df$beach!="D", ]
