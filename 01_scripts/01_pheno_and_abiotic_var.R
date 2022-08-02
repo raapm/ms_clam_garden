@@ -42,7 +42,7 @@ setwd(current.path)
 
 #### 00. Load data ####
 # Set input filename
-pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
+pheno.FN <- "02_input_data/cg_sediment_phenos_2022-08-02.csv"
 
 # Load data
 sed_pheno.df <- read.csv(file = pheno.FN)
@@ -50,8 +50,8 @@ head(sed_pheno.df)
 
 # User select variables #
 # Exclude outlier beach? Toggle below
-#exclude_beach <- FALSE
-exclude_beach <- TRUE
+exclude_beach <- FALSE
+#exclude_beach <- TRUE
 
 # Growth - only use one measurement, either height based on weight or height, as selected below (choose the one to drop)
 growth_to_drop <- "grow.wt.surv" # Keep height
@@ -112,6 +112,8 @@ colnames(pca.df)
 # Rename column headers for figure
 colnames(pca.df)[colnames(pca.df)=="inwt"] <- "initial weight"
 colnames(pca.df)[colnames(pca.df)=="inht"] <- "initial height"
+colnames(pca.df)[colnames(pca.df)=="fiwt"] <- "final weight"
+colnames(pca.df)[colnames(pca.df)=="fiht"] <- "final height"
 colnames(pca.df)[colnames(pca.df)=="grow"] <- "growth"
 colnames(pca.df)[colnames(pca.df)=="surv"] <- "survival"
 colnames(pca.df)[colnames(pca.df)=="carb"] <- "carbonate"
@@ -397,7 +399,7 @@ write.csv(x = data.df, file = "03_pheno_results/abiotic_variables_on_grow_surv_t
 rm(explan_vars)
 sed_pheno.df <- sed_pheno.df.bck # Revert back to the full dataset
 
-#### 02.2 Effect of clam garden status on sediment variables ####
+#### 02.2 Effect of clam garden status on response variables (abiotic or biotic) ####
 # Fit a linear mixed effects model 
 ## where fixed effect is beach type, and random factor is beach (plot nested in beach)
 head(sed_pheno.df)
@@ -610,7 +612,7 @@ capture.output(beach_fx.list, file = "03_pheno_results/by_beach_numeric_vars_ANO
 
 #### 03. Correlation of variables ####
 colnames(sed_pheno.df)
-to_cor_phenos.vec <- c("grow", "surv", "inwt", "inht", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
+to_cor_phenos.vec <- c("grow", "surv", "inwt", "inht", "fiwt", "fiht", "carb", "org", "rocks", "srocks", "vcsand", "csand", "sand"
                        , "fsand", "vfsand", "silt")
 
 # Exclude outlier beach? 
@@ -645,6 +647,12 @@ rownames(cor.set) <- gsub(pattern = "inwt", replacement = "input weight", x = ro
 
 colnames(cor.set) <- gsub(pattern = "inht", replacement = "input height ", x = colnames(cor.set))
 rownames(cor.set) <- gsub(pattern = "inht", replacement = "input height", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "fiwt", replacement = "final weight ", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "fiwt", replacement = "final weight", x = rownames(cor.set))
+
+colnames(cor.set) <- gsub(pattern = "fiht", replacement = "final height ", x = colnames(cor.set))
+rownames(cor.set) <- gsub(pattern = "fiht", replacement = "final height", x = rownames(cor.set))
 
 colnames(cor.set) <- gsub(pattern = "carb", replacement = "carbonate", x = colnames(cor.set))
 rownames(cor.set) <- gsub(pattern = "carb", replacement = "carbonate", x = rownames(cor.set))
@@ -790,8 +798,6 @@ boxplot(sed_pheno.df$inwt ~ sed_pheno.df$beach)
 boxplot(sed_pheno.df$inht ~ sed_pheno.df$beach) 
 # Beaches A, C, E, F are the lowest in weight beaches; arguably these have no significant difference between them
 ## and it is only beach B and D that are elevated relative to the others
-
-# (#TODO) formally test: IS THERE A SIGNIFICANT DIFFERENCE IN INWT IN BEACH A, C, E, F? 
 
 ### Carbonate on survivorship, stratified by weight class beaches
 # Is there a significant effect of carbonate on survivorship in low in-weight beaches? 
