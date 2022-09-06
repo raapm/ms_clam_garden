@@ -59,4 +59,4 @@ This will allow you to:
 
 Outputs will be in `04_txomic_results`.      
 
-**The manuscript is available here**: [preprint](https://www.biorxiv.org/search/ben%252Bj%252Bg%252Bsutherland)
+**The manuscript will be available here**: [preprint](https://www.biorxiv.org/search/ben%252Bj%252Bg%252Bsutherland)
