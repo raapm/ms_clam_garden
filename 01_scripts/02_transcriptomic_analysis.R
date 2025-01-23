@@ -15,6 +15,8 @@
 library("limma")
 library("edgeR")
 library("tidyr")
+library("ggplot2")
+library("ggpubr")
 
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -25,7 +27,7 @@ setwd(current.path)
 uniprot.FN <- "02_input_data/project155.uniprot_blastp.txt.gz"
 contig_annot.FN <- "02_input_data/cgrnaseqBTv1.csv"
 input.FN <- "02_input_data/out.matrix_cg_2022-06-07.csv"
-pheno.FN <- "02_input_data/cg_sediment_phenos_2022-06-24.csv"
+pheno.FN <- "02_input_data/cg_sediment_phenos_2022-08-02.csv"
 
 ## User-set variables
 min.reads.mapping.per.transcript <- 10 # Variable to find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
@@ -68,6 +70,8 @@ head(phenos.df)
 # Import counts file (i.e. the final output from Simple_reads_to_counts repo)
 my.counts <- read.csv(file = input.FN)
 my.counts[1:5,1:5] # note that here the identifier is referred to as 'transcript.id', but is the same as 'contig.id' above
+table(my.counts$transcript.id %in% annot.df$contig.id) # all are present
+table(annot.df$contig.id %in% my.counts$transcript.id) # all are present
 
 # Set first column as rownames
 rownames(my.counts) <- my.counts[,1]
@@ -251,8 +255,75 @@ plotMDS(x = doi
         ) 
 dev.off()
 
+##### Both tissue, ggplot approach ####
+### Plot with symbols instead of names ###
+all_sample.MDS <- plotMDS(x = doi)
+str(all_sample.MDS)
+sample_names <- (all_sample.MDS@.Data[5])
+sample_names <- unlist(dimnames(sample_names[[1]])[1])
+MDS_plot.df <- as.data.frame(cbind(sample_names, all_sample.MDS$x, all_sample.MDS$y))
+colnames(MDS_plot.df) <- c("sample", "x", "y")
+head(MDS_plot.df)
+str(MDS_plot.df)
+MDS_plot.df$x <- as.numeric(MDS_plot.df$x)
+MDS_plot.df$y <- as.numeric(MDS_plot.df$y)
 
-# Plot each tissue with specified variables of interest
+# Add sample attributes
+MDS_plot.df$tissue <- NA
+MDS_plot.df$tissue[grep(pattern = "CG_G", x = MDS_plot.df$sample)] <- "gill"
+MDS_plot.df$tissue[grep(pattern = "CG_DG", x = MDS_plot.df$sample)] <- "dig"
+
+# Reduce label name
+head(MDS_plot.df)
+MDS_plot.df$sample_short <- gsub(pattern = ".*_P", replacement = "P", x = MDS_plot.df$sample)
+MDS_plot.df$sample_short <- gsub(pattern = ".eff.counts", replacement = "", x = MDS_plot.df$sample_short)
+head(MDS_plot.df)
+
+# Calculate per-axis eigenvalues
+x_percent_explained <- paste0(round(all_sample.MDS$eigen.values[1] / sum(all_sample.MDS$eigen.values) * 100, digits = 0), "%")
+y_percent_explained <- paste0(round(all_sample.MDS$eigen.values[2] / sum(all_sample.MDS$eigen.values) * 100, digits = 0), "%")
+
+# Plot with ggplot
+p <- ggplot(MDS_plot.df, aes(x=x, y=y)) + 
+  geom_point(aes(shape=as.factor(tissue)), size = 4) + 
+  scale_shape_manual(values = c(15,0)) +
+  theme_bw()
+p$labels$shape <- "tissue"
+p$labels$x <- paste0("Leading logFC dim 1 (", x_percent_explained, ")")
+p$labels$y <- paste0("Leading logFC dim 2 (", y_percent_explained, ")")
+
+tissue_specific.mds <- p
+tissue_specific.mds
+
+###TODO: print output ###
+
+# Can identify the sample of interest...
+p <- ggplot(MDS_plot.df, aes(x=x, y=y, shape=as.factor(tissue), label = sample_short)) + 
+  geom_point() + 
+  geom_text()
+p
+
+#### MAY WANT TO INDICATE BEACH, NOT SURE YET ###
+
+## Technically we could use ggrepel to add labels if we wanted
+# # Plot with ggplot WITH LABELS OPTION
+# p <- ggplot(MDS_plot.df, aes(x=x, y=y, shape=as.factor(tissue))) + 
+#   geom_point() + 
+#   theme_bw() + 
+#   geom_label_repel(
+#     
+#     aes(x = x, y = y, label = sample_short)
+#     
+#   )
+# p$labels$shape <- "tissue"
+# p$labels$x <- paste0("Leading logFC dim 1 (", x_percent_explained, ")")
+# p$labels$y <- paste0("Leading logFC dim 2 (", y_percent_explained, ")")
+# 
+# tissue_specific.mds <- p
+# tissue_specific.mds
+
+
+##### Plot each tissue with specified variables of interest (Original approach)#####
 #par(mfrow=c(1,1))
 
 tissues.to.include <- c("gill", "dig")
@@ -326,6 +397,110 @@ for(i in 1:length(tissues.to.include)){
   
 }
 
+
+##### Plot each tissue with specified variables of interest (ggplot2 approach) #####
+#par(mfrow=c(1,1))
+
+tissues.to.include <- c("gill", "dig")
+subset_plots.list <- NULL
+for(i in 1:length(tissues.to.include)){
+  
+  # Reporting
+  print(paste0("Plotting ", tissues.to.include[i]))
+  
+  # Choose the tissue DGEList
+  doi <- doi.DGEList.filt.norm[[tissues.to.include[i]]] # choose from 
+  
+  # Run MDS
+  subset_sample.MDS <- plotMDS(x = doi)
+  str(subset_sample.MDS)
+  
+  # Obtain sample names from obj
+  sample_names <- (subset_sample.MDS@.Data[5])
+  sample_names <- unlist(dimnames(sample_names[[1]])[1])
+  
+  # Collect the MDS projections with the gathered sample names
+  MDS_plot.df <- as.data.frame(cbind(sample_names, subset_sample.MDS$x, subset_sample.MDS$y))
+  colnames(MDS_plot.df) <- c("sample", "x", "y")
+  dim(MDS_plot.df)
+  head(MDS_plot.df)
+  str(MDS_plot.df)
+  MDS_plot.df$x <- as.numeric(MDS_plot.df$x) # make numeric
+  MDS_plot.df$y <- as.numeric(MDS_plot.df$y) # make numeric
+  
+  # Generate reduced label name
+  head(MDS_plot.df)
+  MDS_plot.df$sample_short <- gsub(pattern = ".*_P", replacement = "P", x = MDS_plot.df$sample)
+  MDS_plot.df$sample_short <- gsub(pattern = ".eff.counts", replacement = "", x = MDS_plot.df$sample_short)
+  head(MDS_plot.df)
+  
+  # Add order column
+  MDS_plot.df$order <- seq(1:nrow(MDS_plot.df))
+  head(MDS_plot.df)
+  
+  # Add sample attributes from pheno file
+  head(phenos.df)
+  MDS_plot.df <- merge(x = MDS_plot.df, y = phenos.df, by.x = "sample_short", by.y = "sample.id", all.x = T, sort = F)
+  head(MDS_plot.df)
+  
+  # Put back into order
+  MDS_plot.df <- MDS_plot.df[order(MDS_plot.df$order), ]
+  head(MDS_plot.df)  
+  
+  # Calculate per-axis eigenvalues
+  x_percent_explained <- paste0(round(subset_sample.MDS$eigen.values[1] / sum(subset_sample.MDS$eigen.values) * 100, digits = 0), "%")
+  y_percent_explained <- paste0(round(subset_sample.MDS$eigen.values[2] / sum(subset_sample.MDS$eigen.values) * 100, digits = 0), "%")
+  
+  # Plot with ggplot
+  p <- ggplot(MDS_plot.df, aes(x=x, y=y, shape=as.factor(Type), size = surv, colour = as.factor(beach))) + 
+    geom_point() + 
+    theme_bw() 
+  p
+  p$labels$shape <- "beach type"
+  p$labels$size <- "% survival"
+  p$labels$colour <- "beach ID"
+  p$labels$x <- paste0("Leading logFC dim 1 (", x_percent_explained, ")")
+  p$labels$y <- paste0("Leading logFC dim 2 (", y_percent_explained, ")")
+  
+  p
+  
+  # Save plot
+  subset_plots.list[[tissues.to.include[i]]] <- p
+  
+  # Save out plot IDs for interpretation only
+  # Can identify the sample of interest...
+  p <- ggplot(MDS_plot.df, aes(x=x, y=y, label = sample_short)) + 
+    geom_text()
+  p
+  
+  pdf(file = paste0("04_txomic_results/MDS_plot_with_plot_id_labels_", tissues.to.include[i], ".pdf"), width = 6, height = 6)
+  print(p)
+  dev.off()
+  
+}
+
+##### Make composite plot #####
+# Remove legend for first plot
+subset_plot_gill_no_legend <- subset_plots.list[["gill"]] + theme(legend.position = "none")
+subset_plot_gill_no_legend <- subset_plot_gill_no_legend + ggtitle("gill")
+subset_plot_dig <- subset_plots.list[["dig"]] + ggtitle("digestive gland")
+
+per_tissue_plot <- ggarrange(subset_plot_gill_no_legend, subset_plot_dig
+                             , labels = c("B", "C")
+                             , ncol = 2, nrow = 1)
+per_tissue_plot
+
+tissue_specific_plot <- tissue_specific.mds + ggtitle("both tissues")
+tissue_specific_plot <- ggarrange(tissue_specific_plot, labels = c("A"), ncol = 1, nrow = 1)
+
+all_plot <- ggarrange(tissue_specific_plot, per_tissue_plot
+                      , nrow = 2, ncol = 1)
+
+all_plot
+
+pdf(file = "04_txomic_results/MDS_plot_multipanel.pdf", width = 10, height = 9)
+print(all_plot)
+dev.off()
 
 #### 07. Tissue-Specific Expression ####
 datatypes
