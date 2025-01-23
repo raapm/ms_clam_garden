@@ -10,4 +10,5 @@
 *#
 *.zip
 03_pheno_results/results_*
+.DS_Store
 
